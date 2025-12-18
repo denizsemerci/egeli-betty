@@ -8,6 +8,10 @@ const nextConfig = {
       },
     ],
   },
+  // Skip static generation for admin routes
+  async generateBuildId() {
+    return 'build-' + Date.now()
+  },
 }
 
 module.exports = nextConfig

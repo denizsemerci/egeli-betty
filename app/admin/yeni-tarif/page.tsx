@@ -44,11 +44,16 @@ export default function NewRecipePage() {
   const [uploading, setUploading] = useState(false)
   const imageFileRef = useRef<File | null>(null) // Ref to track current image file
   const router = useRouter()
-  const supabase = createClient()
+  const [supabase, setSupabase] = useState<any>(null)
 
-  // Check if already authenticated - always start with false
+  // Initialize Supabase client only on client side to avoid build-time errors
   useEffect(() => {
     if (typeof window !== 'undefined') {
+      try {
+        setSupabase(createClient())
+      } catch (error) {
+        console.error('Failed to initialize Supabase client:', error)
+      }
       // Her zaman false başlat, localStorage kontrolü yapma
       // Kullanıcı her seferinde giriş yapmalı
       setIsAuthenticated(false)
@@ -208,6 +213,10 @@ export default function NewRecipePage() {
       throw new Error('Dosya bulunamadı')
     }
 
+    if (!supabase) {
+      throw new Error('Supabase client başlatılamadı')
+    }
+
     try {
       // Check file size (max 5MB)
       const maxSize = 5 * 1024 * 1024 // 5MB
@@ -342,6 +351,10 @@ export default function NewRecipePage() {
 
       console.log('Inserting recipe:', recipeData)
 
+      if (!supabase) {
+        throw new Error('Supabase client başlatılamadı. Lütfen sayfayı yenileyin.')
+      }
+
       const { data: insertedData, error } = await supabase
         .from('recipes')
         .insert(recipeData)
@@ -378,6 +391,18 @@ export default function NewRecipePage() {
     if (currentStep > 1) {
       setCurrentStep(currentStep - 1)
     }
+  }
+
+  // Show loading if Supabase client is not initialized (shouldn't happen in production)
+  if (!supabase && typeof window !== 'undefined') {
+    return (
+      <div className="min-h-screen flex items-center justify-center px-4 bg-background">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-text/60">Yükleniyor...</p>
+        </div>
+      </div>
+    )
   }
 
   return (
