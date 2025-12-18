@@ -6,6 +6,7 @@ import { createClient } from '@/lib/supabase/client'
 import { generateSlug } from '@/lib/utils'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ArrowLeft, ArrowRight, Upload, X, Loader2 } from 'lucide-react'
+import Image from 'next/image'
 import { useForm, useFieldArray } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -620,11 +621,13 @@ export default function NewRecipePage() {
 
                   <div className="space-y-4">
                     {imagePreview ? (
-                      <div className="relative">
-                        <img
+                      <div className="relative w-full h-64">
+                        <Image
                           src={imagePreview}
                           alt="Preview"
-                          className="w-full h-64 object-cover rounded-2xl"
+                          fill
+                          className="object-cover rounded-2xl"
+                          unoptimized
                         />
                         <button
                           type="button"
