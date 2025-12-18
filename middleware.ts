@@ -12,11 +12,18 @@ export async function middleware(request: NextRequest) {
     },
   })
 
-  // Create Supabase client for session management
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
+  // Check if environment variables are available
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+  // If environment variables are missing, skip Supabase initialization
+  if (!supabaseUrl || !supabaseKey) {
+    return response
+  }
+
+  try {
+    // Create Supabase client for session management
+    const supabase = createServerClient(supabaseUrl, supabaseKey, {
       cookies: {
         getAll() {
           return request.cookies.getAll()
@@ -33,11 +40,14 @@ export async function middleware(request: NextRequest) {
           )
         },
       },
-    }
-  )
+    })
 
-  // Refresh session if needed (Supabase SSR requirement)
-  await supabase.auth.getUser()
+    // Refresh session if needed (Supabase SSR requirement)
+    await supabase.auth.getUser()
+  } catch (error) {
+    // If Supabase initialization fails, continue without it
+    console.error('Middleware Supabase error:', error)
+  }
 
   return response
 }
