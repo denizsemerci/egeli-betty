@@ -376,8 +376,41 @@ export default function NewRecipePage() {
       
       setUploadProgress('Tarif kaydediliyor...')
 
-      const slug = generateSlug(data.title)
-      console.log('Generated slug:', slug)
+      if (!supabase) {
+        throw new Error('Supabase client başlatılamadı. Lütfen sayfayı yenileyin.')
+      }
+
+      // Generate unique slug
+      let baseSlug = generateSlug(data.title)
+      let slug = baseSlug
+      let slugCounter = 1
+      
+      // Check if slug exists and generate unique one
+      while (true) {
+        const { data: existingRecipe } = await supabase
+          .from('recipes')
+          .select('slug')
+          .eq('slug', slug)
+          .single()
+        
+        if (!existingRecipe) {
+          // Slug is unique, break the loop
+          break
+        }
+        
+        // Slug exists, try with counter
+        slug = `${baseSlug}-${slugCounter}`
+        slugCounter++
+        
+        // Safety check to prevent infinite loop
+        if (slugCounter > 100) {
+          // Fallback: use timestamp
+          slug = `${baseSlug}-${Date.now()}`
+          break
+        }
+      }
+      
+      console.log('Generated unique slug:', slug)
 
       const recipeData = {
         title: data.title.trim(),
@@ -394,10 +427,6 @@ export default function NewRecipePage() {
 
       console.log('Inserting recipe:', recipeData)
 
-      if (!supabase) {
-        throw new Error('Supabase client başlatılamadı. Lütfen sayfayı yenileyin.')
-      }
-
       const { data: insertedData, error } = await supabase
         .from('recipes')
         .insert(recipeData)
@@ -405,7 +434,23 @@ export default function NewRecipePage() {
 
       if (error) {
         console.error('Supabase error:', error)
-        throw new Error(error.message || 'Veritabanı hatası: ' + JSON.stringify(error))
+        
+        // More user-friendly error messages
+        let errorMessage = 'Tarif kaydedilirken bir hata oluştu.'
+        
+        if (error.message?.includes('duplicate key value violates unique constraint')) {
+          if (error.message?.includes('recipes_slug_key')) {
+            errorMessage = 'Bu başlığa sahip bir tarif zaten mevcut. Lütfen tarif başlığını değiştirin.'
+          } else {
+            errorMessage = 'Bu tarif zaten mevcut. Lütfen farklı bir başlık kullanın.'
+          }
+        } else if (error.message?.includes('violates not-null constraint')) {
+          errorMessage = 'Lütfen tüm zorunlu alanları doldurun.'
+        } else if (error.message) {
+          errorMessage = `Hata: ${error.message}`
+        }
+        
+        throw new Error(errorMessage)
       }
 
       if (!insertedData || insertedData.length === 0) {
