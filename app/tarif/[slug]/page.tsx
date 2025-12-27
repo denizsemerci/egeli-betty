@@ -131,7 +131,7 @@ export default async function RecipeDetailPage({
               <h2 className="text-2xl font-heading font-semibold text-text mb-6">
                 Malzemeler
               </h2>
-              <IngredientsList ingredients={recipe.ingredients} />
+              <IngredientsList ingredients={recipe.ingredients} defaultServings={recipe.servings} />
             </section>
 
             {/* Instructions */}
