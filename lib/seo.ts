@@ -8,6 +8,9 @@ interface Recipe {
   category: string
   prep_time: number
   servings: number
+  created_at?: string
+  ingredients?: string[] | unknown
+  steps?: string[] | unknown
 }
 
 export function generateRecipeMetadata(recipe: Recipe): Metadata {
@@ -107,7 +110,7 @@ export function generateRecipeStructuredData(recipe: Recipe) {
       '@type': 'Person',
       name: 'Betül',
     },
-    datePublished: new Date().toISOString(),
+    datePublished: recipe.created_at || new Date().toISOString(),
     prepTime: `PT${recipe.prep_time}M`,
     recipeYield: `${recipe.servings} kişilik`,
     recipeCategory: recipe.category,
