@@ -53,7 +53,7 @@ export default function AdminDashboard() {
           .select('category')
         
         const categoriesCount: Record<string, number> = {}
-        allRecipes?.forEach((recipe) => {
+        allRecipes?.forEach((recipe: { category: string }) => {
           categoriesCount[recipe.category] = (categoriesCount[recipe.category] || 0) + 1
         })
 
