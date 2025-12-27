@@ -5,6 +5,8 @@ import { Clock, Users } from 'lucide-react'
 import IngredientsList from '@/components/IngredientsList'
 import InstructionsList from '@/components/InstructionsList'
 import ShareButton from '@/components/ShareButton'
+import { generateRecipeMetadata, generateRecipeStructuredData } from '@/lib/seo'
+import type { Metadata } from 'next'
 
 export async function generateStaticParams() {
   try {
@@ -16,6 +18,35 @@ export async function generateStaticParams() {
     })) || []
   } catch {
     return []
+  }
+}
+
+export async function generateMetadata({
+  params,
+}: {
+  params: { slug: string }
+}): Promise<Metadata> {
+  try {
+    const supabase = await createClient()
+    const { data: recipe } = await supabase
+      .from('recipes')
+      .select('*')
+      .eq('slug', params.slug)
+      .single()
+
+    if (!recipe) {
+      return {
+        title: 'Tarif Bulunamadı',
+        description: 'Aradığınız tarif bulunamadı.',
+      }
+    }
+
+    return generateRecipeMetadata(recipe)
+  } catch {
+    return {
+      title: 'Tarif Bulunamadı',
+      description: 'Aradığınız tarif bulunamadı.',
+    }
   }
 }
 
@@ -35,8 +66,14 @@ export default async function RecipeDetailPage({
     notFound()
   }
 
+  const structuredData = generateRecipeStructuredData(recipe)
 
   return (
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
+      />
     <div className="min-h-screen bg-background">
       {/* Hero Image */}
       {recipe.image_url && (
@@ -95,6 +132,7 @@ export default async function RecipeDetailPage({
         </section>
       </div>
     </div>
+    </>
   )
 }
 

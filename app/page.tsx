@@ -3,6 +3,10 @@ import RecipeCard from '@/components/RecipeCard'
 import CategoryPills from '@/components/CategoryPills'
 import SearchBar from '@/components/SearchBar'
 import { Heart } from 'lucide-react'
+import { generateHomeMetadata } from '@/lib/seo'
+import type { Metadata } from 'next'
+
+export const metadata: Metadata = generateHomeMetadata()
 
 const categories = [
   'Tümü',
