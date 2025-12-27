@@ -1,0 +1,674 @@
+'use client'
+
+import { useState, useEffect, useRef } from 'react'
+import { useRouter } from 'next/navigation'
+import { createClient } from '@/lib/supabase/client'
+import { generateSlug } from '@/lib/utils'
+import { motion, AnimatePresence } from 'framer-motion'
+import { ArrowLeft, ArrowRight, Upload, X, Loader2 } from 'lucide-react'
+import Image from 'next/image'
+import { useForm, useFieldArray } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { z } from 'zod'
+import { useToast, ToastContainer } from '@/components/admin/Toast'
+import ImageUpload from '@/components/admin/ImageUpload'
+
+const recipeSchema = z.object({
+  title: z.string().min(1, 'Başlık gereklidir'),
+  description: z.string().min(1, 'Açıklama gereklidir'),
+  category: z.string().min(1, 'Kategori seçilmelidir'),
+  prep_time: z.number().min(1, 'Hazırlık süresi gereklidir'),
+  servings: z.number().min(1, 'Porsiyon sayısı gereklidir'),
+  ingredients: z.array(z.object({ value: z.string().min(1, 'Malzeme adı gereklidir') })).min(1, 'En az bir malzeme eklenmelidir'),
+  steps: z.array(z.object({ value: z.string().min(1, 'Adım açıklaması gereklidir') })).min(1, 'En az bir adım eklenmelidir'),
+})
+
+type RecipeFormData = z.infer<typeof recipeSchema>
+
+const categories = [
+  'Zeytinyağlılar',
+  'Hamur İşi',
+  'Tatlılar',
+  'Salatalar',
+  'Çorbalar',
+  'Ana Yemekler',
+]
+
+interface RecipeFormProps {
+  recipeId?: string // If provided, we're in edit mode
+  initialData?: {
+    title: string
+    description: string
+    category: string
+    prep_time: number
+    servings: number
+    ingredients: string[]
+    steps: string[]
+    image_url: string | null
+  }
+}
+
+export default function RecipeForm({ recipeId, initialData }: RecipeFormProps) {
+  const isEditMode = !!recipeId
+  const [currentStep, setCurrentStep] = useState(1)
+  const [imageFile, setImageFile] = useState<File | null>(null)
+  const [imagePreview, setImagePreview] = useState<string | null>(initialData?.image_url || null)
+  const [uploading, setUploading] = useState(false)
+  const [uploadProgress, setUploadProgress] = useState<string>('')
+  const imageFileRef = useRef<File | null>(null)
+  const router = useRouter()
+  const [supabase, setSupabase] = useState<any>(null)
+  const { toasts, success, error, removeToast } = useToast()
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      setSupabase(createClient())
+    }
+  }, [])
+
+  const {
+    register,
+    handleSubmit,
+    control,
+    formState: { errors },
+    reset,
+  } = useForm<RecipeFormData>({
+    resolver: zodResolver(recipeSchema),
+    defaultValues: initialData
+      ? {
+          title: initialData.title,
+          description: initialData.description,
+          category: initialData.category,
+          prep_time: initialData.prep_time,
+          servings: initialData.servings,
+          ingredients: initialData.ingredients.map((ing) => ({ value: ing })),
+          steps: initialData.steps.map((step) => ({ value: step })),
+        }
+      : {
+          ingredients: [{ value: '' }],
+          steps: [{ value: '' }],
+        },
+  })
+
+  const {
+    fields: ingredientFields,
+    append: appendIngredient,
+    remove: removeIngredient,
+  } = useFieldArray({
+    control,
+    name: 'ingredients',
+  })
+
+  const {
+    fields: stepFields,
+    append: appendStep,
+    remove: removeStep,
+  } = useFieldArray({
+    control,
+    name: 'steps',
+  })
+
+  // Load recipe data if in edit mode
+  useEffect(() => {
+    if (isEditMode && !initialData && supabase) {
+      const loadRecipe = async () => {
+        try {
+          const { data, error: fetchError } = await supabase
+            .from('recipes')
+            .select('*')
+            .eq('id', recipeId)
+            .single()
+
+          if (fetchError) throw fetchError
+
+          if (data) {
+            reset({
+              title: data.title,
+              description: data.description,
+              category: data.category,
+              prep_time: data.prep_time,
+              servings: data.servings,
+              ingredients: (data.ingredients || []).map((ing: string) => ({ value: ing })),
+              steps: (data.steps || []).map((step: string) => ({ value: step })),
+            })
+            setImagePreview(data.image_url)
+          }
+        } catch (err) {
+          console.error('Error loading recipe:', err)
+          error('Tarif yüklenirken bir hata oluştu')
+        }
+      }
+
+      loadRecipe()
+    }
+  }, [isEditMode, recipeId, initialData, supabase, reset, error])
+
+  const uploadImage = async (fileToUpload: File): Promise<string | null> => {
+    if (!fileToUpload || !supabase) {
+      throw new Error('Dosya veya Supabase client bulunamadı')
+    }
+
+    try {
+      const maxSize = 5 * 1024 * 1024 // 5MB
+      if (fileToUpload.size > maxSize) {
+        throw new Error('Dosya boyutu çok büyük. Maksimum 5MB olmalıdır.')
+      }
+
+      const fileExt = fileToUpload.name.split('.').pop()
+      const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`
+      const filePath = `recipes/${fileName}`
+
+      setUploadProgress('Görsel yükleniyor...')
+
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('recipe-images')
+        .upload(filePath, fileToUpload, {
+          cacheControl: '3600',
+          upsert: false
+        })
+
+      if (uploadError) {
+        if (uploadError.message?.includes('new row violates row-level security')) {
+          throw new Error('Storage policy hatası: Lütfen Supabase\'de storage policy\'lerini kontrol edin.')
+        } else if (uploadError.message?.includes('Bucket not found')) {
+          throw new Error('Storage bucket bulunamadı.')
+        } else {
+          throw new Error(`Fotoğraf yüklenemedi: ${uploadError.message || 'Bilinmeyen hata'}`)
+        }
+      }
+
+      if (!uploadData) {
+        throw new Error('Upload başarısız: Veri alınamadı')
+      }
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('recipe-images')
+        .getPublicUrl(filePath)
+
+      if (!publicUrl) {
+        throw new Error('Public URL oluşturulamadı')
+      }
+
+      return publicUrl
+    } catch (err: any) {
+      console.error('Image upload failed:', err)
+      throw err
+    }
+  }
+
+  const onSubmit = async (data: RecipeFormData) => {
+    if (currentStep !== 4) return
+    if (uploading) return
+
+    setUploading(true)
+    try {
+      if (!supabase) {
+        throw new Error('Supabase client başlatılamadı. Lütfen sayfayı yenileyin.')
+      }
+
+      let imageUrl = imagePreview || null
+      const currentImageFile = imageFileRef.current || imageFile
+
+      // Upload new image if file is selected
+      if (currentImageFile) {
+        try {
+          // If editing and has existing image, delete old one first
+          if (isEditMode && initialData?.image_url && currentImageFile) {
+            const oldImagePath = initialData.image_url.split('/').slice(-2).join('/')
+            await supabase.storage.from('recipe-images').remove([oldImagePath])
+          }
+
+          imageUrl = await uploadImage(currentImageFile)
+          if (!imageUrl) {
+            throw new Error('Fotoğraf yüklenemedi: URL alınamadı')
+          }
+          setUploadProgress('Görsel başarıyla yüklendi!')
+        } catch (imageError: any) {
+          const errorMessage = imageError?.message || 'Fotoğraf yüklenemedi'
+          setUploadProgress('')
+          
+          const shouldContinue = window.confirm(
+            `Fotoğraf yüklenemedi!\n\nHata: ${errorMessage}\n\nFotoğraf olmadan devam etmek ister misiniz?`
+          )
+          if (!shouldContinue) {
+            setUploading(false)
+            setUploadProgress('')
+            return
+          }
+          imageUrl = isEditMode ? initialData?.image_url || null : null
+        }
+      } else if (isEditMode) {
+        // Keep existing image if no new file selected
+        imageUrl = initialData?.image_url || null
+      }
+
+      setUploadProgress('Tarif kaydediliyor...')
+
+      // Generate unique slug
+      let baseSlug = generateSlug(data.title)
+      let slug = baseSlug
+      
+      if (!isEditMode) {
+        // Only check for duplicates when creating new recipe
+        let slugCounter = 1
+        while (true) {
+          const { data: existingRecipe } = await supabase
+            .from('recipes')
+            .select('slug')
+            .eq('slug', slug)
+            .single()
+          
+          if (!existingRecipe) break
+          
+          slug = `${baseSlug}-${slugCounter}`
+          slugCounter++
+          
+          if (slugCounter > 100) {
+            slug = `${baseSlug}-${Date.now()}`
+            break
+          }
+        }
+      }
+
+      const recipeData = {
+        title: data.title.trim(),
+        slug: isEditMode ? undefined : slug, // Don't update slug when editing
+        description: data.description.trim(),
+        category: data.category,
+        prep_time: Number(data.prep_time),
+        servings: Number(data.servings),
+        ingredients: data.ingredients.map((i) => i.value.trim()).filter(Boolean),
+        steps: data.steps.map((s) => s.value.trim()).filter(Boolean),
+        image_url: imageUrl,
+        user_email: 'deniz.semerci1036@gmail.com',
+      }
+
+      if (isEditMode) {
+        // Update existing recipe
+        const { error: updateError } = await supabase
+          .from('recipes')
+          .update(recipeData)
+          .eq('id', recipeId)
+
+        if (updateError) throw updateError
+
+        success('Tarif başarıyla güncellendi!')
+        setTimeout(() => {
+          router.push('/admin/tarifler')
+        }, 1000)
+      } else {
+        // Create new recipe
+        const { data: insertedData, error: insertError } = await supabase
+          .from('recipes')
+          .insert(recipeData)
+          .select()
+
+        if (insertError) {
+          let errorMessage = 'Tarif kaydedilirken bir hata oluştu.'
+          if (insertError.message?.includes('duplicate key value violates unique constraint')) {
+            errorMessage = 'Bu başlığa sahip bir tarif zaten mevcut. Lütfen tarif başlığını değiştirin.'
+          }
+          throw new Error(errorMessage)
+        }
+
+        if (!insertedData || insertedData.length === 0) {
+          throw new Error('Tarif kaydedilemedi. Lütfen tekrar deneyin.')
+        }
+
+        success('Tarif başarıyla eklendi!')
+        setTimeout(() => {
+          router.push(`/tarif/${slug}`)
+        }, 1000)
+      }
+    } catch (err: any) {
+      console.error('Error saving recipe:', err)
+      error(err.message || 'Tarif kaydedilirken bir hata oluştu')
+      setUploading(false)
+      setUploadProgress('')
+    }
+  }
+
+  const nextStep = () => {
+    if (currentStep < 4) {
+      setCurrentStep(currentStep + 1)
+    }
+  }
+
+  const prevStep = () => {
+    if (currentStep > 1) {
+      setCurrentStep(currentStep - 1)
+    }
+  }
+
+  return (
+    <>
+      <ToastContainer toasts={toasts} onClose={removeToast} />
+      
+      <div className="space-y-6">
+        {/* Header */}
+        <div>
+          <h1 className="text-3xl font-heading font-bold text-text mb-2">
+            {isEditMode ? 'Tarif Düzenle' : 'Yeni Tarif Ekle'}
+          </h1>
+          <p className="text-text/60">
+            {isEditMode ? 'Tarif bilgilerini güncelleyin' : 'Adım adım tarif ekleyin'}
+          </p>
+        </div>
+
+        {/* Progress Steps */}
+        <div className="flex items-center justify-between max-w-2xl">
+          {[1, 2, 3, 4].map((step) => (
+            <div key={step} className="flex items-center flex-1">
+              <div className="flex flex-col items-center flex-1">
+                <div
+                  className={`w-10 h-10 rounded-full flex items-center justify-center font-bold transition-all ${
+                    currentStep >= step
+                      ? 'bg-primary text-white'
+                      : 'bg-warm-light text-text/40'
+                  }`}
+                >
+                  {step}
+                </div>
+                <p className="text-xs mt-2 text-text/60 text-center">
+                  {step === 1 && 'Genel Bilgiler'}
+                  {step === 2 && 'Malzemeler'}
+                  {step === 3 && 'Yapılış'}
+                  {step === 4 && 'Fotoğraf'}
+                </p>
+              </div>
+              {step < 4 && (
+                <div
+                  className={`h-1 flex-1 mx-2 transition-all ${
+                    currentStep > step ? 'bg-primary' : 'bg-warm-light'
+                  }`}
+                />
+              )}
+            </div>
+          ))}
+        </div>
+
+        <form onSubmit={handleSubmit(onSubmit)} className="bg-surface rounded-2xl p-6 lg:p-8 shadow-lg border border-warm/30">
+          <AnimatePresence mode="wait">
+            {/* Step 1: General Info */}
+            {currentStep === 1 && (
+              <motion.div
+                key="step1"
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                className="space-y-6"
+              >
+                <h2 className="text-2xl font-heading font-semibold text-text mb-6">
+                  Genel Bilgiler
+                </h2>
+
+                <div>
+                  <label className="block text-sm font-medium text-text mb-2">
+                    Tarif Başlığı *
+                  </label>
+                  <input
+                    {...register('title')}
+                    type="text"
+                    className="w-full px-4 py-3 rounded-xl border-2 border-warm/30 focus:border-primary focus:outline-none bg-background text-text"
+                    placeholder="Örn: Zeytinyağlı Enginar"
+                  />
+                  {errors.title && (
+                    <p className="text-red-600 text-sm mt-1">{errors.title.message}</p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-text mb-2">
+                    Açıklama *
+                  </label>
+                  <textarea
+                    {...register('description')}
+                    rows={4}
+                    className="w-full px-4 py-3 rounded-xl border-2 border-warm/30 focus:border-primary focus:outline-none bg-background text-text"
+                    placeholder="Tarif hakkında kısa bir açıklama..."
+                  />
+                  {errors.description && (
+                    <p className="text-red-600 text-sm mt-1">{errors.description.message}</p>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-text mb-2">
+                      Kategori *
+                    </label>
+                    <select
+                      {...register('category')}
+                      className="w-full px-4 py-3 rounded-xl border-2 border-warm/30 focus:border-primary focus:outline-none bg-background text-text"
+                    >
+                      <option value="">Seçiniz</option>
+                      {categories.map((cat) => (
+                        <option key={cat} value={cat}>
+                          {cat}
+                        </option>
+                      ))}
+                    </select>
+                    {errors.category && (
+                      <p className="text-red-600 text-sm mt-1">{errors.category.message}</p>
+                    )}
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-text mb-2">
+                      Hazırlık Süresi (dk) *
+                    </label>
+                    <input
+                      {...register('prep_time', { valueAsNumber: true })}
+                      type="number"
+                      min="1"
+                      className="w-full px-4 py-3 rounded-xl border-2 border-warm/30 focus:border-primary focus:outline-none bg-background text-text"
+                    />
+                    {errors.prep_time && (
+                      <p className="text-red-600 text-sm mt-1">{errors.prep_time.message}</p>
+                    )}
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-text mb-2">
+                      Porsiyon *
+                    </label>
+                    <input
+                      {...register('servings', { valueAsNumber: true })}
+                      type="number"
+                      min="1"
+                      className="w-full px-4 py-3 rounded-xl border-2 border-warm/30 focus:border-primary focus:outline-none bg-background text-text"
+                    />
+                    {errors.servings && (
+                      <p className="text-red-600 text-sm mt-1">{errors.servings.message}</p>
+                    )}
+                  </div>
+                </div>
+              </motion.div>
+            )}
+
+            {/* Step 2: Ingredients */}
+            {currentStep === 2 && (
+              <motion.div
+                key="step2"
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                className="space-y-6"
+              >
+                <h2 className="text-2xl font-heading font-semibold text-text mb-6">
+                  Malzemeler
+                </h2>
+
+                <div className="space-y-4">
+                  {ingredientFields.map((field, index) => (
+                    <div key={field.id} className="flex gap-2">
+                      <input
+                        {...register(`ingredients.${index}.value`)}
+                        type="text"
+                        className="flex-1 px-4 py-3 rounded-xl border-2 border-warm/30 focus:border-primary focus:outline-none bg-background text-text"
+                        placeholder={`Malzeme ${index + 1}...`}
+                      />
+                      {ingredientFields.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => removeIngredient(index)}
+                          className="p-3 text-red-600 hover:bg-red-50 rounded-xl transition-colors"
+                        >
+                          <X className="w-5 h-5" />
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                  {errors.ingredients && (
+                    <p className="text-red-600 text-sm">{errors.ingredients.message}</p>
+                  )}
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => appendIngredient({ value: '' })}
+                  className="w-full py-3 border-2 border-dashed border-warm/50 rounded-xl text-text/60 hover:border-primary hover:text-primary transition-colors"
+                >
+                  + Malzeme Ekle
+                </button>
+              </motion.div>
+            )}
+
+            {/* Step 3: Steps */}
+            {currentStep === 3 && (
+              <motion.div
+                key="step3"
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                className="space-y-6"
+              >
+                <h2 className="text-2xl font-heading font-semibold text-text mb-6">
+                  Yapılış Adımları
+                </h2>
+
+                <div className="space-y-4">
+                  {stepFields.map((field, index) => (
+                    <div key={field.id} className="flex gap-2">
+                      <textarea
+                        {...register(`steps.${index}.value`)}
+                        rows={3}
+                        className="flex-1 px-4 py-3 rounded-xl border-2 border-warm/30 focus:border-primary focus:outline-none bg-background text-text"
+                        placeholder={`Adım ${index + 1} açıklaması...`}
+                      />
+                      {stepFields.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => removeStep(index)}
+                          className="p-3 text-red-600 hover:bg-red-50 rounded-xl transition-colors self-start"
+                        >
+                          <X className="w-5 h-5" />
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                  {errors.steps && (
+                    <p className="text-red-600 text-sm">{errors.steps.message}</p>
+                  )}
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => appendStep({ value: '' })}
+                  className="w-full py-3 border-2 border-dashed border-warm/50 rounded-xl text-text/60 hover:border-primary hover:text-primary transition-colors"
+                >
+                  + Adım Ekle
+                </button>
+              </motion.div>
+            )}
+
+            {/* Step 4: Image */}
+            {currentStep === 4 && (
+              <motion.div
+                key="step4"
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                className="space-y-6"
+              >
+                <h2 className="text-2xl font-heading font-semibold text-text mb-6">
+                  Fotoğraf Ekle (İsteğe Bağlı)
+                </h2>
+
+                <ImageUpload
+                  imagePreview={imagePreview}
+                  onImageChange={(file) => {
+                    setImageFile(file)
+                    imageFileRef.current = file
+                    if (file) {
+                      const reader = new FileReader()
+                      reader.onloadend = () => {
+                        setImagePreview(reader.result as string)
+                      }
+                      reader.readAsDataURL(file)
+                    }
+                  }}
+                  onImageRemove={() => {
+                    setImageFile(null)
+                    imageFileRef.current = null
+                    setImagePreview(null)
+                  }}
+                />
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Navigation Buttons */}
+          <div className="flex justify-between mt-8 pt-6 border-t border-warm/30">
+            <button
+              type="button"
+              onClick={prevStep}
+              disabled={currentStep === 1}
+              className="px-6 py-3 rounded-xl border-2 border-warm/30 text-text hover:border-primary hover:text-primary transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              Geri
+            </button>
+
+            {currentStep < 4 ? (
+              <button
+                type="button"
+                onClick={nextStep}
+                className="px-6 py-3 bg-primary text-white rounded-xl hover:bg-primary-dark transition-colors flex items-center gap-2"
+              >
+                İleri
+                <ArrowRight className="w-4 h-4" />
+              </button>
+            ) : (
+              <div className="flex flex-col items-end gap-2">
+                {uploadProgress && (
+                  <p className="text-sm text-primary font-medium">
+                    {uploadProgress}
+                  </p>
+                )}
+                <button
+                  type="submit"
+                  disabled={uploading}
+                  className="px-6 py-3 bg-primary text-white rounded-xl hover:bg-primary-dark transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                >
+                  {uploading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      {uploadProgress || 'Kaydediliyor...'}
+                    </>
+                  ) : (
+                    <>
+                      {isEditMode ? 'Güncelle' : 'Tarifi Kaydet'}
+                      <ArrowRight className="w-4 h-4" />
+                    </>
+                  )}
+                </button>
+              </div>
+            )}
+          </div>
+        </form>
+      </div>
+    </>
+  )
+}
+
