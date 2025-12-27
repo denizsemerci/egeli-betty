@@ -42,6 +42,7 @@ export default function NewRecipePage() {
   const [imageFile, setImageFile] = useState<File | null>(null)
   const [imagePreview, setImagePreview] = useState<string | null>(null)
   const [uploading, setUploading] = useState(false)
+  const [uploadProgress, setUploadProgress] = useState<string>('')
   const imageFileRef = useRef<File | null>(null) // Ref to track current image file
   const router = useRouter()
   const [supabase, setSupabase] = useState<any>(null)
@@ -190,22 +191,58 @@ export default function NewRecipePage() {
   }
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    e.preventDefault()
+    e.stopPropagation()
+    
     const file = e.target.files?.[0]
-    console.log('Image file selected:', file?.name, file?.size, file?.type)
-    if (file) {
-      setImageFile(file)
-      imageFileRef.current = file // Update ref as well
-      console.log('Image file set to state and ref:', file.name)
-      const reader = new FileReader()
-      reader.onloadend = () => {
-        setImagePreview(reader.result as string)
-        console.log('Image preview set')
-      }
-      reader.readAsDataURL(file)
-    } else {
+    
+    if (!file) {
       console.warn('No file selected')
       imageFileRef.current = null
+      setImageFile(null)
+      setImagePreview(null)
+      return
     }
+
+    // Validate file type
+    const validTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp']
+    if (!validTypes.includes(file.type)) {
+      alert('Geçersiz dosya formatı. Lütfen PNG, JPG veya WEBP formatında bir görsel seçin.')
+      e.target.value = '' // Reset input
+      return
+    }
+
+    // Validate file size (max 5MB)
+    const maxSize = 5 * 1024 * 1024 // 5MB
+    if (file.size > maxSize) {
+      alert('Dosya boyutu çok büyük. Maksimum 5MB olmalıdır.')
+      e.target.value = '' // Reset input
+      return
+    }
+
+    console.log('Image file selected:', file.name, file.size, file.type)
+    
+    // Set file to state and ref
+    setImageFile(file)
+    imageFileRef.current = file
+    
+    // Create preview
+    const reader = new FileReader()
+    reader.onerror = () => {
+      console.error('Error reading file')
+      alert('Görsel okunurken bir hata oluştu. Lütfen başka bir görsel deneyin.')
+      setImageFile(null)
+      imageFileRef.current = null
+      setImagePreview(null)
+      e.target.value = ''
+    }
+    reader.onloadend = () => {
+      if (reader.result) {
+        setImagePreview(reader.result as string)
+        console.log('Image preview set successfully')
+      }
+    }
+    reader.readAsDataURL(file)
   }
 
   const uploadImage = async (fileToUpload: File): Promise<string | null> => {
@@ -307,23 +344,27 @@ export default function NewRecipePage() {
       
       if (currentImageFile) {
         console.log('Uploading image...', currentImageFile.name, currentImageFile.size, currentImageFile.type)
+        setUploadProgress('Görsel yükleniyor...')
         try {
           imageUrl = await uploadImage(currentImageFile)
           if (!imageUrl) {
             throw new Error('Fotoğraf yüklenemedi: URL alınamadı')
           }
           console.log('Image uploaded successfully:', imageUrl)
+          setUploadProgress('Görsel başarıyla yüklendi!')
         } catch (imageError: any) {
           console.error('Image upload error:', imageError)
           const errorMessage = imageError?.message || 'Fotoğraf yüklenemedi'
           console.error('Full error:', imageError)
+          setUploadProgress('')
           
           // Show detailed error to user
-          const shouldContinue = confirm(
+          const shouldContinue = window.confirm(
             `Fotoğraf yüklenemedi!\n\nHata: ${errorMessage}\n\nFotoğraf olmadan devam etmek ister misiniz?`
           )
           if (!shouldContinue) {
             setUploading(false)
+            setUploadProgress('')
             return
           }
           console.warn('Continuing without image...')
@@ -332,6 +373,8 @@ export default function NewRecipePage() {
       } else {
         console.log('No image file to upload, continuing without image')
       }
+      
+      setUploadProgress('Tarif kaydediliyor...')
 
       const slug = generateSlug(data.title)
       console.log('Generated slug:', slug)
@@ -370,14 +413,26 @@ export default function NewRecipePage() {
       }
 
       console.log('Recipe inserted successfully:', insertedData)
-
-      // Success - redirect to recipe page
-      router.push(`/tarif/${slug}`)
+      setUploadProgress('Tarif başarıyla kaydedildi!')
+      
+      // Success - redirect to recipe page after a short delay
+      setTimeout(() => {
+        router.push(`/tarif/${slug}`)
+      }, 500)
     } catch (error: any) {
       console.error('Error creating recipe:', error)
       const errorMessage = error?.message || 'Tarif eklenirken bir hata oluştu. Lütfen tekrar deneyin.'
       alert(`Hata: ${errorMessage}`)
       setUploading(false)
+      setUploadProgress('')
+    } finally {
+      // Ensure uploading state is reset if something goes wrong
+      setTimeout(() => {
+        if (uploading) {
+          setUploading(false)
+          setUploadProgress('')
+        }
+      }, 1000)
     }
   }
 
@@ -646,52 +701,61 @@ export default function NewRecipePage() {
 
                   <div className="space-y-4">
                     {imagePreview ? (
-                      <div className="relative w-full h-64">
+                      <div className="relative w-full h-64 rounded-2xl overflow-hidden border-2 border-warm/30">
                         <Image
                           src={imagePreview}
                           alt="Preview"
                           fill
-                          className="object-cover rounded-2xl"
+                          className="object-cover"
                           unoptimized
                         />
                         <button
                           type="button"
-                          onClick={() => {
+                          onClick={(e) => {
+                            e.preventDefault()
+                            e.stopPropagation()
                             setImageFile(null)
                             imageFileRef.current = null
                             setImagePreview(null)
+                            // Reset file input
+                            const fileInput = document.getElementById('recipe-image-input') as HTMLInputElement
+                            if (fileInput) {
+                              fileInput.value = ''
+                            }
                           }}
-                          className="absolute top-4 right-4 p-2 bg-red-600 text-white rounded-full hover:bg-red-700 transition-colors"
+                          className="absolute top-4 right-4 p-2 bg-red-600 text-white rounded-full hover:bg-red-700 transition-colors shadow-lg z-10"
                         >
                           <X className="w-5 h-5" />
                         </button>
+                        <div className="absolute bottom-4 left-4 right-4 bg-black/60 backdrop-blur-sm rounded-lg p-2">
+                          <p className="text-white text-sm font-medium">
+                            {imageFile?.name || 'Görsel seçildi'}
+                          </p>
+                          <p className="text-white/80 text-xs">
+                            {(imageFile?.size ? (imageFile.size / 1024 / 1024).toFixed(2) : '0')} MB
+                          </p>
+                        </div>
                       </div>
                     ) : (
                       <label 
-                        className="block"
-                        onClick={(e) => {
-                          // Prevent form submission when clicking label
-                          e.preventDefault()
-                        }}
+                        htmlFor="recipe-image-input"
+                        className="block cursor-pointer"
                       >
-                        <div className="border-2 border-dashed border-secondary/50 rounded-2xl p-12 text-center cursor-pointer hover:border-primary transition-colors">
-                          <Upload className="w-12 h-12 text-text/40 mx-auto mb-4" />
-                          <p className="text-text/60 mb-2">
+                        <div className="border-2 border-dashed border-secondary/50 rounded-2xl p-12 text-center hover:border-primary transition-colors bg-warm-light/30">
+                          <Upload className="w-12 h-12 text-primary mx-auto mb-4" />
+                          <p className="text-text font-medium mb-2">
                             Fotoğraf yüklemek için tıkla
                           </p>
-                          <p className="text-sm text-text/40">
+                          <p className="text-sm text-text/60">
                             PNG, JPG veya WEBP (Max 5MB)
                           </p>
                         </div>
                         <input
+                          id="recipe-image-input"
                           type="file"
-                          accept="image/*"
+                          accept="image/png,image/jpeg,image/jpg,image/webp"
                           onChange={handleImageChange}
                           className="hidden"
-                          onClick={(e) => {
-                            // Prevent form submission
-                            e.stopPropagation()
-                          }}
                         />
                       </label>
                     )}
@@ -722,23 +786,30 @@ export default function NewRecipePage() {
                   <ArrowRight className="w-4 h-4" />
                 </button>
               ) : (
-                <button
-                  type="submit"
-                  disabled={uploading}
-                  className="px-6 py-3 bg-primary text-white rounded-2xl hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-                >
-                  {uploading ? (
-                    <>
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                      Kaydediliyor...
-                    </>
-                  ) : (
-                    <>
-                      Tarifi Kaydet
-                      <ArrowRight className="w-4 h-4" />
-                    </>
+                <div className="flex flex-col items-end gap-2">
+                  {uploadProgress && (
+                    <p className="text-sm text-primary font-medium">
+                      {uploadProgress}
+                    </p>
                   )}
-                </button>
+                  <button
+                    type="submit"
+                    disabled={uploading}
+                    className="px-6 py-3 bg-primary text-white rounded-2xl hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                  >
+                    {uploading ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        {uploadProgress || 'Kaydediliyor...'}
+                      </>
+                    ) : (
+                      <>
+                        Tarifi Kaydet
+                        <ArrowRight className="w-4 h-4" />
+                      </>
+                    )}
+                  </button>
+                </div>
               )}
             </div>
           </div>
