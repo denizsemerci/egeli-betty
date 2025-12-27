@@ -1,11 +1,14 @@
 import { MetadataRoute } from 'next'
-import { createClient } from '@/lib/supabase/server'
+import { createStaticClient } from '@/lib/supabase/static'
+
+export const dynamic = 'force-static'
+export const revalidate = 3600 // Revalidate every hour
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://egelibetty.com.tr'
 
   try {
-    const supabase = await createClient()
+    const supabase = createStaticClient()
     const { data: recipes } = await supabase
       .from('recipes')
       .select('slug, updated_at')
