@@ -13,7 +13,7 @@ interface IngredientsListProps {
 function parseIngredient(ingredient: string, multiplier: number): string {
   // Sayıları ve birimleri bul
   const numberRegex = /(\d+[\.,]?\d*)\s*([a-zA-ZğüşıöçĞÜŞİÖÇ]+)?/g
-  const matches = [...ingredient.matchAll(numberRegex)]
+  const matches = Array.from(ingredient.matchAll(numberRegex))
   
   if (matches.length === 0) return ingredient
   
