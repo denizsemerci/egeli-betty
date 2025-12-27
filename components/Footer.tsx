@@ -12,7 +12,7 @@ export default function Footer() {
             href="/admin/giris"
             className="px-4 py-2 border-2 border-primary text-primary rounded-xl hover:bg-primary hover:text-white transition-colors text-sm font-medium"
           >
-            Admin Girişi
+            Anne Girişi
           </Link>
         </div>
       </div>
