@@ -68,7 +68,25 @@ export default function AdminSettingsPage() {
         return
       }
 
-      // Save to localStorage (for now, can be moved to Supabase later)
+      // Call API endpoint
+      const response = await fetch('/api/admin/profile', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: settings.email,
+          displayName: settings.displayName,
+        }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Profil güncellenirken bir hata oluştu')
+      }
+
+      // Save to localStorage
       localStorage.setItem('admin_email', settings.email)
       if (settings.displayName) {
         localStorage.setItem('admin_displayName', settings.displayName)
