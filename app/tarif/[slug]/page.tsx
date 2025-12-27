@@ -7,6 +7,7 @@ import IngredientsList from '@/components/IngredientsList'
 import InstructionsList from '@/components/InstructionsList'
 import ShareButton from '@/components/ShareButton'
 import RelatedRecipes from '@/components/RelatedRecipes'
+import AuthorBadge from '@/components/AuthorBadge'
 import { generateRecipeMetadata, generateRecipeStructuredData } from '@/lib/seo'
 import type { Metadata } from 'next'
 
@@ -154,13 +155,17 @@ export default async function RecipeDetailPage({
                     <span className="font-medium">{recipe.servings} kişilik</span>
                   </div>
                 </div>
-                <ShareButton recipe={recipe} />
+                <div className="flex items-center justify-between flex-wrap gap-4 mb-6">
+                  <AuthorBadge />
+                  <ShareButton recipe={recipe} />
+                </div>
               </header>
             )}
 
-            {/* Share Button - If hero image exists */}
+            {/* Share Button and Author - If hero image exists */}
             {recipe.image_url && (
-              <div className="mb-8">
+              <div className="mb-8 flex items-center justify-between flex-wrap gap-4">
+                <AuthorBadge />
                 <ShareButton recipe={recipe} />
               </div>
             )}

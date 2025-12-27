@@ -11,11 +11,11 @@ export default function AdminLoginPage() {
   const router = useRouter()
 
   useEffect(() => {
-    // Check if already authenticated
+    // Check if already authenticated - redirect to admin if logged in
     if (typeof window !== 'undefined') {
       const auth = localStorage.getItem('admin_auth')
       if (auth === 'true') {
-        router.push('/admin')
+        router.replace('/admin')
       }
     }
   }, [router])

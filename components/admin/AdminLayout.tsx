@@ -38,12 +38,19 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     if (typeof window !== 'undefined') {
       const auth = localStorage.getItem('admin_auth')
       const isAuth = auth === 'true'
+      
+      // If on login page and authenticated, redirect to admin
+      if (pathname?.includes('/admin/giris') && isAuth) {
+        router.replace('/admin')
+        return
+      }
+      
       setIsAuthenticated(isAuth)
       setIsChecking(false)
       
       // Redirect to login if not authenticated and not on login page
       if (!isAuth && pathname && !pathname.includes('/admin/giris')) {
-        router.push('/admin/giris')
+        router.replace('/admin/giris')
       }
     }
   }, [pathname, router])
@@ -66,14 +73,35 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     )
   }
 
-  // Don't show layout for login page
+  // Don't show layout for login page - but still check auth
   if (pathname?.includes('/admin/giris')) {
+    // If authenticated, redirect to admin dashboard
+    if (isAuthenticated) {
+      router.replace('/admin')
+      return (
+        <div className="min-h-screen flex items-center justify-center bg-background">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+            <p className="text-text/60">Yönlendiriliyor...</p>
+          </div>
+        </div>
+      )
+    }
+    // Show login page if not authenticated
     return <>{children}</>
   }
 
-  // Don't show layout if not authenticated
+  // Don't show layout if not authenticated - redirect to login
   if (!isAuthenticated) {
-    return null
+    router.replace('/admin/giris')
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-text/60">Yönlendiriliyor...</p>
+        </div>
+      </div>
+    )
   }
 
   return (
