@@ -6,6 +6,7 @@ import { Clock, Users } from 'lucide-react'
 import IngredientsList from '@/components/IngredientsList'
 import InstructionsList from '@/components/InstructionsList'
 import ShareButton from '@/components/ShareButton'
+import RelatedRecipes from '@/components/RelatedRecipes'
 import { generateRecipeMetadata, generateRecipeStructuredData } from '@/lib/seo'
 import type { Metadata } from 'next'
 
@@ -85,64 +86,111 @@ export default async function RecipeDetailPage({
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
         />
-        <div className="min-h-screen bg-background">
-          {/* Hero Image */}
+        <main className="min-h-screen bg-background">
+          {/* Hero Image - Full Width */}
           {recipe.image_url && (
-            <div className="relative w-full h-64 md:h-96 overflow-hidden">
+            <section className="relative w-full h-[50vh] min-h-[400px] max-h-[600px] overflow-hidden">
               <Image
                 src={recipe.image_url}
-                alt={recipe.title}
+                alt={`${recipe.title} - Egeli Betty`}
                 fill
                 className="object-cover"
                 priority
                 sizes="100vw"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
-            </div>
-          )}
-
-          <div className="container mx-auto px-4 py-8 max-w-4xl">
-            {/* Recipe Header */}
-            <div className="mb-8">
-              <h1 className="text-3xl md:text-4xl font-heading font-bold text-text mb-4">
-                {recipe.title}
-              </h1>
-              <p className="text-lg text-text/80 mb-6">
-                {recipe.description}
-              </p>
-              <div className="flex flex-wrap items-center gap-6 mb-6">
-                <div className="flex items-center gap-2 text-text/70">
-                  <Clock className="w-5 h-5 text-primary" />
-                  <span className="font-medium">{recipe.prep_time} dakika</span>
-                </div>
-                <div className="flex items-center gap-2 text-text/70">
-                  <Users className="w-5 h-5 text-primary" />
-                  <span className="font-medium">{recipe.servings} kişilik</span>
-                </div>
-                <div className="px-4 py-2 bg-secondary/30 rounded-full text-sm text-text/70">
-                  {recipe.category}
+              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent" />
+              
+              {/* Overlay Content */}
+              <div className="absolute bottom-0 left-0 right-0 p-8 md:p-12 text-white">
+                <div className="container mx-auto max-w-4xl">
+                  <div className="flex items-center gap-3 mb-3">
+                    <span className="px-4 py-1.5 bg-white/20 backdrop-blur-sm rounded-full text-sm font-semibold">
+                      {recipe.category}
+                    </span>
+                    <div className="flex items-center gap-4 text-white/90 text-sm">
+                      <div className="flex items-center gap-1.5">
+                        <Clock className="w-4 h-4" />
+                        <span>{recipe.prep_time} dk</span>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <Users className="w-4 h-4" />
+                        <span>{recipe.servings} kişilik</span>
+                      </div>
+                    </div>
+                  </div>
+                  <h1 className="text-4xl md:text-5xl lg:text-6xl font-heading font-bold mb-3 drop-shadow-lg">
+                    {recipe.title}
+                  </h1>
+                  <p className="text-lg md:text-xl text-white/95 max-w-3xl drop-shadow-md">
+                    {recipe.description}
+                  </p>
                 </div>
               </div>
-              <ShareButton recipe={recipe} />
-            </div>
+            </section>
+          )}
+
+          <article className="container mx-auto px-4 py-8 md:py-12 max-w-4xl">
+            {/* Recipe Meta - If no hero image */}
+            {!recipe.image_url && (
+              <header className="mb-8 pb-8 border-b border-warm/30">
+                <div className="flex items-center gap-3 mb-4">
+                  <span className="px-4 py-1.5 bg-primary/10 text-primary rounded-full text-sm font-semibold">
+                    {recipe.category}
+                  </span>
+                </div>
+                <h1 className="text-4xl md:text-5xl font-heading font-bold text-text mb-4">
+                  {recipe.title}
+                </h1>
+                <p className="text-xl text-text/80 mb-6">
+                  {recipe.description}
+                </p>
+                <div className="flex flex-wrap items-center gap-6 mb-6">
+                  <div className="flex items-center gap-2 text-text/70">
+                    <Clock className="w-5 h-5 text-primary" />
+                    <span className="font-medium">{recipe.prep_time} dakika</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-text/70">
+                    <Users className="w-5 h-5 text-primary" />
+                    <span className="font-medium">{recipe.servings} kişilik</span>
+                  </div>
+                </div>
+                <ShareButton recipe={recipe} />
+              </header>
+            )}
+
+            {/* Share Button - If hero image exists */}
+            {recipe.image_url && (
+              <div className="mb-8">
+                <ShareButton recipe={recipe} />
+              </div>
+            )}
 
             {/* Ingredients */}
-            <section className="mb-12">
-              <h2 className="text-2xl font-heading font-semibold text-text mb-6">
+            <section className="mb-12" aria-labelledby="ingredients-heading">
+              <h2 id="ingredients-heading" className="text-3xl font-heading font-bold text-text mb-6 flex items-center gap-3">
+                <span className="w-1 h-8 bg-primary rounded-full" />
                 Malzemeler
               </h2>
               <IngredientsList ingredients={recipe.ingredients} defaultServings={recipe.servings} />
             </section>
 
             {/* Instructions */}
-            <section className="mb-12">
-              <h2 className="text-2xl font-heading font-semibold text-text mb-6">
+            <section className="mb-12" aria-labelledby="instructions-heading">
+              <h2 id="instructions-heading" className="text-3xl font-heading font-bold text-text mb-6 flex items-center gap-3">
+                <span className="w-1 h-8 bg-primary rounded-full" />
                 Nasıl Yapılır?
               </h2>
               <InstructionsList steps={recipe.steps} />
             </section>
-          </div>
-        </div>
+
+            {/* Related Recipes */}
+            <RelatedRecipes
+              currentRecipeId={recipe.id}
+              category={recipe.category}
+              limit={3}
+            />
+          </article>
+        </main>
       </>
     )
   } catch (error) {
