@@ -80,7 +80,7 @@ Eğer nameserver değiştirmek istemiyorsanız:
 **A Kaydı:**
 - Type: A
 - Name: @ (veya boş)
-- Value: `76.76.21.21` (Vercel'in IP adresi - güncel olanı kontrol edin)
+- Value: `216.198.79.1` (Vercel'in güncel IP adresi)
 
 **CNAME Kaydı:**
 - Type: CNAME
