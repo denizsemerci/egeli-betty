@@ -260,7 +260,7 @@ export default function AdminSettingsPage() {
                   placeholder="Örn: Betty"
                 />
                 <p className="text-xs text-text/50 mt-1">
-                  Örnek: "Betty" yazarsanız, sitede "Betty" görünecek
+                  Örnek: &quot;Betty&quot; yazarsanız, sitede &quot;Betty&quot; görünecek
                 </p>
               </div>
 

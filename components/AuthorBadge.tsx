@@ -17,7 +17,7 @@ export default function AuthorBadge() {
       <User className="w-4 h-4 text-primary" />
       <span>
         <span className="font-medium text-text">{authorName}</span>
-        <span className="text-text/50">'nin Mutfağı</span>
+        <span className="text-text/50">&apos;nin Mutfağı</span>
       </span>
     </div>
   )
