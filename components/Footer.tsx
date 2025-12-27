@@ -9,10 +9,10 @@ export default function Footer() {
             © {new Date().getFullYear()} Egeli Betty. Tüm hakları saklıdır.
           </p>
           <Link
-            href="/admin/yeni-tarif"
-            className="text-sm text-primary hover:text-primary/80 transition-colors"
+            href="/admin/giris"
+            className="px-4 py-2 border-2 border-primary text-primary rounded-xl hover:bg-primary hover:text-white transition-colors text-sm font-medium"
           >
-            Yeni Tarif Ekle
+            Anne Girişi
           </Link>
         </div>
       </div>
