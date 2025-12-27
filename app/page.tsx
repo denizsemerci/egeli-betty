@@ -4,6 +4,7 @@ import CategoryPills from '@/components/CategoryPills'
 import SearchBar from '@/components/SearchBar'
 import { generateHomeMetadata } from '@/lib/seo'
 import type { Metadata } from 'next'
+import Image from 'next/image'
 
 export const metadata: Metadata = generateHomeMetadata()
 
@@ -45,10 +46,17 @@ export default async function Home({
       {/* Hero Section - Full Width Banner */}
       <section className="relative w-full h-[70vh] min-h-[500px] max-h-[800px] overflow-hidden">
         {/* Hero Background Image */}
-        <div className="absolute inset-0 bg-gradient-to-br from-primary-dark/90 via-primary/80 to-secondary/70">
-          {/* Placeholder for hero image - can be replaced with actual image */}
-          <div className="absolute inset-0 bg-[url('/hero-bg.jpg')] bg-cover bg-center opacity-30" />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
+        <div className="absolute inset-0">
+          <Image
+            src="/hero-feast.jpg"
+            alt="Ege Mutfağı Sofrası - Egeli Betty"
+            fill
+            priority
+            className="object-cover"
+            sizes="100vw"
+            quality={90}
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/40 to-black/20" />
         </div>
 
         {/* Hero Content */}
