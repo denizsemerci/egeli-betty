@@ -115,16 +115,18 @@ export function generateRecipeStructuredData(recipe: Recipe) {
     recipeYield: `${recipe.servings} kişilik`,
     recipeCategory: recipe.category,
     recipeCuisine: 'Turkish',
-    recipeIngredient: Array.isArray(recipe.ingredients)
-      ? recipe.ingredients.map((ing: string) => ing)
-      : [],
-    recipeInstructions: Array.isArray(recipe.steps)
-      ? recipe.steps.map((step: string, index: number) => ({
-          '@type': 'HowToStep',
-          position: index + 1,
-          text: step,
-        }))
-      : [],
+    recipeIngredient:
+      recipe.ingredients && Array.isArray(recipe.ingredients)
+        ? (recipe.ingredients as string[]).map((ing: string) => ing)
+        : [],
+    recipeInstructions:
+      recipe.steps && Array.isArray(recipe.steps)
+        ? (recipe.steps as string[]).map((step: string, index: number) => ({
+            '@type': 'HowToStep',
+            position: index + 1,
+            text: step,
+          }))
+        : [],
   }
 }
 
