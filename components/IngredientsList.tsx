@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { Check, Users, ShoppingCart } from 'lucide-react'
 import { motion } from 'framer-motion'
+import SmartLinkText from './SmartLinkText'
 
 interface IngredientsListProps {
   ingredients: string[] | null
@@ -127,7 +128,7 @@ export default function IngredientsList({ ingredients, defaultServings = 4 }: In
                   isChecked ? 'line-through text-text/50' : ''
                 }`}
               >
-                {adjustedIngredient}
+                <SmartLinkText text={adjustedIngredient} />
               </span>
             </motion.li>
           )

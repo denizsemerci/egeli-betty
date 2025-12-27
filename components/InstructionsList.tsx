@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { Check } from 'lucide-react'
+import SmartLinkText from './SmartLinkText'
 
 interface InstructionsListProps {
   steps: string[] | null
@@ -80,7 +81,7 @@ export default function InstructionsList({ steps }: InstructionsListProps) {
                         isCompleted ? 'line-through text-text/50' : ''
                       }`}
                     >
-                      {step}
+                      <SmartLinkText text={step} />
                     </p>
                     {isCompleted && (
                       <p className="text-sm text-primary font-medium mt-2 flex items-center gap-1">
