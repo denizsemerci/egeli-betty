@@ -8,9 +8,8 @@ interface Recipe {
   category: string
   prep_time: number
   servings: number
-  created_at?: string
-  ingredients?: string[] | unknown
-  steps?: string[] | unknown
+  ingredients: string[] | null
+  steps: string[] | null
 }
 
 export function generateRecipeMetadata(recipe: Recipe): Metadata {
@@ -100,6 +99,16 @@ export function generateRecipeStructuredData(recipe: Recipe) {
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://egelibetty.com.tr'
   const imageUrl = recipe.image_url || `${siteUrl}/og-image.jpg`
 
+  // Handle ingredients - can be string[] or null
+  const ingredients = Array.isArray(recipe.ingredients) 
+    ? recipe.ingredients 
+    : []
+
+  // Handle steps - can be string[] or null
+  const steps = Array.isArray(recipe.steps) 
+    ? recipe.steps 
+    : []
+
   return {
     '@context': 'https://schema.org',
     '@type': 'Recipe',
@@ -110,23 +119,17 @@ export function generateRecipeStructuredData(recipe: Recipe) {
       '@type': 'Person',
       name: 'Betül',
     },
-    datePublished: recipe.created_at || new Date().toISOString(),
+    datePublished: new Date().toISOString(),
     prepTime: `PT${recipe.prep_time}M`,
     recipeYield: `${recipe.servings} kişilik`,
     recipeCategory: recipe.category,
     recipeCuisine: 'Turkish',
-    recipeIngredient:
-      recipe.ingredients && Array.isArray(recipe.ingredients)
-        ? (recipe.ingredients as string[]).map((ing: string) => ing)
-        : [],
-    recipeInstructions:
-      recipe.steps && Array.isArray(recipe.steps)
-        ? (recipe.steps as string[]).map((step: string, index: number) => ({
-            '@type': 'HowToStep',
-            position: index + 1,
-            text: step,
-          }))
-        : [],
+    recipeIngredient: ingredients,
+    recipeInstructions: steps.map((step: string, index: number) => ({
+      '@type': 'HowToStep',
+      position: index + 1,
+      text: step,
+    })),
   }
 }
 

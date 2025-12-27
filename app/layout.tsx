@@ -80,10 +80,6 @@ export const metadata: Metadata = {
       'max-snippet': -1,
     },
   },
-  verification: {
-    // Google Search Console verification code can be added here
-    // google: 'your-verification-code',
-  },
 }
 
 export default function RootLayout({
@@ -91,7 +87,6 @@ export default function RootLayout({
 }: {
   children: React.ReactNode
 }) {
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://egelibetty.com.tr'
   const websiteStructuredData = generateWebsiteStructuredData()
 
   return (

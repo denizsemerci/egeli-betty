@@ -75,8 +75,8 @@ export default async function RecipeDetailPage({
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
       />
-      <div className="min-h-screen bg-background">
-        {/* Hero Image */}
+    <div className="min-h-screen bg-background">
+      {/* Hero Image */}
       {recipe.image_url && (
         <div className="relative w-full h-64 md:h-96 overflow-hidden">
           <Image
