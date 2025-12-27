@@ -10,7 +10,7 @@ export default function Footer() {
           </p>
           <Link
             href="/admin/yeni-tarif"
-            className="text-sm text-primary hover:text-primary/80 transition-colors"
+            className="px-4 py-2 border-2 border-primary text-primary rounded-xl hover:bg-primary hover:text-white transition-colors text-sm font-medium"
           >
             Yeni Tarif Ekle
           </Link>
