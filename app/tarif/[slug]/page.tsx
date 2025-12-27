@@ -5,6 +5,8 @@ import { Clock, Users } from 'lucide-react'
 import IngredientsList from '@/components/IngredientsList'
 import InstructionsList from '@/components/InstructionsList'
 import ShareButton from '@/components/ShareButton'
+import { generateRecipeMetadata, generateRecipeStructuredData } from '@/lib/seo'
+import type { Metadata } from 'next'
 
 export async function generateStaticParams() {
   try {
@@ -19,26 +21,62 @@ export async function generateStaticParams() {
   }
 }
 
+export async function generateMetadata({
+  params,
+}: {
+  params: { slug: string }
+}): Promise<Metadata> {
+  try {
+    const supabase = await createClient()
+    const { data: recipe } = await supabase
+      .from('recipes')
+      .select('*')
+      .eq('slug', params.slug)
+      .single()
+
+    if (!recipe) {
+      return {
+        title: 'Tarif Bulunamadı',
+        description: 'Aradığınız tarif bulunamadı.',
+      }
+    }
+
+    return generateRecipeMetadata(recipe)
+  } catch {
+    return {
+      title: 'Tarif Bulunamadı',
+      description: 'Aradığınız tarif bulunamadı.',
+    }
+  }
+}
+
 export default async function RecipeDetailPage({
   params,
 }: {
   params: { slug: string }
 }) {
   const supabase = await createClient()
-  const { data: recipe } = await supabase
+  const { data: recipe, error } = await supabase
     .from('recipes')
     .select('*')
     .eq('slug', params.slug)
     .single()
 
-  if (!recipe) {
+  if (error || !recipe) {
+    console.error('Error fetching recipe:', error)
     notFound()
   }
 
+  const structuredData = generateRecipeStructuredData(recipe)
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Hero Image */}
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
+      />
+      <div className="min-h-screen bg-background">
+        {/* Hero Image */}
       {recipe.image_url && (
         <div className="relative w-full h-64 md:h-96 overflow-hidden">
           <Image
@@ -95,6 +133,7 @@ export default async function RecipeDetailPage({
         </section>
       </div>
     </div>
+    </>
   )
 }
 
