@@ -3,9 +3,9 @@ import Image from 'next/image'
 
 export default function Header() {
   return (
-    <header className="fixed top-0 left-0 right-0 z-50">
-      {/* Glass morphism effect */}
-      <div className="absolute inset-0 bg-gradient-to-b from-white/80 via-warm-light/70 to-warm-light/60 backdrop-blur-xl border-b border-white/20 shadow-lg" />
+    <header className="relative z-50">
+      {/* Glass morphism effect with darker gradient */}
+      <div className="absolute inset-0 bg-gradient-to-b from-primary-dark/40 via-primary/30 to-secondary/20 backdrop-blur-xl border-b border-primary/20 shadow-lg" />
       
       {/* Content */}
       <div className="relative container mx-auto px-4 py-6">
@@ -16,7 +16,7 @@ export default function Header() {
                 src="/egelibetty-logo.png"
                 alt="Egeli Betty Logo"
                 fill
-                className="object-contain group-hover:opacity-90 transition-opacity drop-shadow-sm"
+                className="object-contain group-hover:opacity-90 transition-opacity drop-shadow-lg"
                 priority
                 sizes="(max-width: 768px) 192px, 256px"
               />

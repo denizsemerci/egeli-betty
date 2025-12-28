@@ -42,8 +42,6 @@ export default async function Home({
 
   return (
     <>
-      {/* Spacer for fixed header */}
-      <div className="h-24 md:h-28" />
       <main className="min-h-screen">
       {/* Hero Section - Full Width Banner */}
       <section className="relative w-full h-[70vh] min-h-[500px] max-h-[800px] overflow-hidden">
