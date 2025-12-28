@@ -3,22 +3,18 @@ import Image from 'next/image'
 
 export default function Header() {
   return (
-    <header className="relative z-50">
-      {/* Glass morphism effect with darker gradient */}
-      <div className="absolute inset-0 bg-gradient-to-b from-primary-dark/40 via-primary/30 to-secondary/20 backdrop-blur-xl border-b border-primary/20 shadow-lg" />
-      
-      {/* Content */}
-      <div className="relative container mx-auto px-4 py-6">
-        <div className="flex justify-center">
-          <Link href="/" className="group">
-            <div className="relative w-48 h-16 md:w-64 md:h-20">
+    <header className="relative z-50 bg-white/95 backdrop-blur-md border-b border-warm/20 shadow-sm">
+      <div className="container mx-auto px-4 md:px-6 lg:px-8">
+        <div className="flex items-center justify-center py-4 md:py-5">
+          <Link href="/" className="group relative">
+            <div className="relative w-40 h-12 md:w-56 md:h-16 transition-transform duration-300 group-hover:scale-105">
               <Image
                 src="/egelibetty-logo.png"
-                alt="Egeli Betty Logo"
+                alt="Egeli Betty - Ege Mutfağı Tarifleri"
                 fill
-                className="object-contain group-hover:opacity-90 transition-opacity drop-shadow-lg"
+                className="object-contain"
                 priority
-                sizes="(max-width: 768px) 192px, 256px"
+                sizes="(max-width: 768px) 160px, 224px"
               />
             </div>
           </Link>
