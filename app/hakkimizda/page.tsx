@@ -33,10 +33,10 @@ export default function AboutPage() {
               <span className="text-sm font-medium">Kuşaktan Kuşağa Bir Lezzet Mirası</span>
             </div>
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-heading font-bold mb-6 leading-tight drop-shadow-lg">
-              Egeli Betty'nin Hikayesi
+              Egeli Betty&apos;nin Hikayesi
             </h1>
             <p className="text-xl md:text-2xl text-white/95 font-light drop-shadow-md">
-              Kuzey Ege'nin İki Yakasından Sofranıza
+              Kuzey Ege&apos;nin İki Yakasından Sofranıza
             </p>
           </div>
         </div>
@@ -49,11 +49,11 @@ export default function AboutPage() {
           <div className="flex items-center gap-3 mb-6">
             <Wind className="w-6 h-6 text-primary" />
             <h2 className="text-3xl font-heading font-bold text-text">
-              Kuzey Ege'nin Rüzgarı ve Anne Eli
+              Kuzey Ege&apos;nin Rüzgarı ve Anne Eli
             </h2>
           </div>
           <p className="text-lg text-text/80 leading-relaxed mb-6">
-            Her şey, Kuzey Ege'nin zeytin ağaçları arasında, deniz kokusunun kekik kokusuna karıştığı o bereketli topraklarda başladı. <span className="font-semibold text-primary">"Egeli Betty"</span>, aslında sadece bir web sitesi değil; yıllar içinde demlenmiş, kuşaktan kuşağa aktarılmış ve iki yakanın –hem Anadolu'nun hem de karşı kıyının– lezzet sırlarıyla harmanlanmış bir mutfak mirasıdır.
+            Her şey, Kuzey Ege&apos;nin zeytin ağaçları arasında, deniz kokusunun kekik kokusuna karıştığı o bereketli topraklarda başladı. <span className="font-semibold text-primary">&ldquo;Egeli Betty&rdquo;</span>, aslında sadece bir web sitesi değil; yıllar içinde demlenmiş, kuşaktan kuşağa aktarılmış ve iki yakanın –hem Anadolu&apos;nun hem de karşı kıyının– lezzet sırlarıyla harmanlanmış bir mutfak mirasıdır.
           </p>
         </div>
 
@@ -66,7 +66,7 @@ export default function AboutPage() {
             </div>
             <h3 className="text-xl font-heading font-bold text-text mb-3">Köklerimiz</h3>
             <p className="text-sm text-text/70 leading-relaxed">
-              Yunanistan'dan Kuzey Ege kıyılarına uzanan göçmen bir ailenin mutfak geleneğini yaşatıyoruz. Zeytinyağının en hası, otların en tazesi bizim mutfağımızın baş tacıdır.
+              Yunanistan&apos;dan Kuzey Ege kıyılarına uzanan göçmen bir ailenin mutfak geleneğini yaşatıyoruz. Zeytinyağının en hası, otların en tazesi bizim mutfağımızın baş tacıdır.
             </p>
           </div>
 
@@ -77,7 +77,7 @@ export default function AboutPage() {
             </div>
             <h3 className="text-xl font-heading font-bold text-text mb-3">Şefimiz: Betty</h3>
             <p className="text-sm text-text/70 leading-relaxed">
-              Emekli ama mutfaktan asla emekli olmayan, el lezzetiyle yiyen herkesi kendine hayran bırakan annem. "Egeli Betty" ismi, onun yıllar önce başlattığı serüvenin bugünkü yankısıdır.
+              Emekli ama mutfaktan asla emekli olmayan, el lezzetiyle yiyen herkesi kendine hayran bırakan annem. &ldquo;Egeli Betty&rdquo; ismi, onun yıllar önce başlattığı serüvenin bugünkü yankısıdır.
             </p>
           </div>
 
@@ -104,17 +104,17 @@ export default function AboutPage() {
 
           <div className="space-y-6 text-text/80 leading-relaxed">
             <p className="text-lg">
-              Ben daha dünyaya gelmeden önce, annem <span className="font-semibold text-primary">"Egeli Betty"</span> adıyla bir blogda yazıya döküyordu mutfağının sırlarını. O zamanlar dijital dünya bu kadar büyük değildi belki ama annemin sofrasındaki lezzetlerin ünü, ekranların ötesine taşıyordu.
+              Ben daha dünyaya gelmeden önce, annem <span className="font-semibold text-primary">&ldquo;Egeli Betty&rdquo;</span> adıyla bir blogda yazıya döküyordu mutfağının sırlarını. O zamanlar dijital dünya bu kadar büyük değildi belki ama annemin sofrasındaki lezzetlerin ünü, ekranların ötesine taşıyordu.
             </p>
 
             <p className="text-lg">
-              Şimdi emekli olsa da, mutfak önlüğünü hiç çıkarmadı. Yunanistan göçmeni bir ailenin kızı olarak, genlerinde taşıdığı o eşsiz damak tadını, Kuzey Ege'nin taptaze otları ve altın sarısı zeytinyağıyla birleştirerek sanatını icra etmeye devam ediyor.
+              Şimdi emekli olsa da, mutfak önlüğünü hiç çıkarmadı. Yunanistan göçmeni bir ailenin kızı olarak, genlerinde taşıdığı o eşsiz damak tadını, Kuzey Ege&apos;nin taptaze otları ve altın sarısı zeytinyağıyla birleştirerek sanatını icra etmeye devam ediyor.
             </p>
 
             <div className="bg-white/60 rounded-2xl p-6 my-8 border-l-4 border-primary">
               <h3 className="text-2xl font-heading font-bold text-text mb-4">Neden Şimdi?</h3>
               <p className="text-lg">
-                Ben, o meşhur yemeklerle büyüyen şanslı kızı olarak, bu lezzetlerin sadece bizim soframızda kalmasına gönlüm razı olmadı. Annemin <span className="italic">"el lezzeti"</span> dediğimiz o tarifsiz büyüsünü, unutulmaya yüz tutmuş göçmen tariflerini ve Ege'nin şifalı mutfağını tüm dünya ile paylaşmak istedim.
+                Ben, o meşhur yemeklerle büyüyen şanslı kızı olarak, bu lezzetlerin sadece bizim soframızda kalmasına gönlüm razı olmadı. Annemin <span className="italic">&ldquo;el lezzeti&rdquo;</span> dediğimiz o tarifsiz büyüsünü, unutulmaya yüz tutmuş göçmen tariflerini ve Ege&apos;nin şifalı mutfağını tüm dünya ile paylaşmak istedim.
               </p>
             </div>
 
@@ -131,10 +131,10 @@ export default function AboutPage() {
             Hoş Geldiniz!
           </h2>
           <p className="text-xl text-text/80 mb-4 max-w-2xl mx-auto leading-relaxed">
-            Bizim mutfağımızda ölçüler <span className="font-semibold text-primary">"göz kararı"</span> değil, <span className="font-semibold text-primary">"gönül kararı"</span>dır.
+            Bizim mutfağımızda ölçüler <span className="font-semibold text-primary">&ldquo;göz kararı&rdquo;</span> değil, <span className="font-semibold text-primary">&ldquo;gönül kararı&rdquo;</span>dır.
           </p>
           <p className="text-lg text-text/70 max-w-2xl mx-auto">
-            Sofraların birleştirici gücüne inanan herkesi, Egeli Betty'nin lezzet yolculuğuna davet ediyoruz.
+            Sofraların birleştirici gücüne inanan herkesi, Egeli Betty&apos;nin lezzet yolculuğuna davet ediyoruz.
           </p>
           <div className="mt-8 flex flex-col sm:flex-row gap-4 justify-center items-center">
             <a
