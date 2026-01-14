@@ -2,8 +2,9 @@
 
 import Link from 'next/link'
 import Image from 'next/image'
-import { Clock, Users, ChefHat } from 'lucide-react'
+import { Clock, Users, ChefHat, Heart } from 'lucide-react'
 import { motion } from 'framer-motion'
+import { useFavorites } from '@/lib/useFavorites'
 
 interface Recipe {
   id: string
@@ -29,6 +30,14 @@ function getDifficultyLevel(prepTime: number): { level: string; color: string } 
 
 export default function RecipeCard({ recipe }: RecipeCardProps) {
   const difficulty = getDifficultyLevel(recipe.prep_time)
+  const { isFavorite, toggleFavorite, isLoaded } = useFavorites()
+  const favorite = isLoaded && isFavorite(recipe.id)
+
+  const handleFavoriteClick = (e: React.MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    toggleFavorite(recipe.id)
+  }
 
   return (
     <motion.article
@@ -67,12 +76,20 @@ export default function RecipeCard({ recipe }: RecipeCardProps) {
               </span>
             </div>
 
-            {/* Difficulty Badge */}
-            <div className="absolute top-4 right-4">
-              <span className={`px-3 py-1.5 rounded-full text-xs font-semibold shadow-md ${difficulty.color}`}>
-                {difficulty.level}
-              </span>
-            </div>
+            {/* Favorite Button */}
+            <button
+              onClick={handleFavoriteClick}
+              className={`absolute top-4 right-4 p-2.5 rounded-full backdrop-blur-sm transition-all shadow-md hover:scale-110 ${
+                favorite 
+                  ? 'bg-red-500 text-white' 
+                  : 'bg-white/90 text-text/60 hover:text-red-500'
+              }`}
+              aria-label={favorite ? 'Favorilerden çıkar' : 'Favorilere ekle'}
+            >
+              <Heart 
+                className={`w-5 h-5 transition-all ${favorite ? 'fill-current' : ''}`} 
+              />
+            </button>
           </div>
 
           {/* Content Section */}

@@ -42,9 +42,9 @@ export default async function Home({
 
   return (
     <>
-      <main className="min-h-screen">
+      <main className="min-h-screen pt-20 md:pt-24">
       {/* Hero Section - Full Width Banner */}
-      <section className="relative w-full h-[70vh] min-h-[500px] max-h-[800px] overflow-hidden">
+      <section className="relative w-full h-[70vh] min-h-[500px] max-h-[800px] overflow-hidden -mt-20 md:-mt-24">
         {/* Hero Background Image */}
         <div className="absolute inset-0">
           <Image
