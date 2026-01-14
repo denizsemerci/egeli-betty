@@ -54,7 +54,7 @@ export default function Footer() {
               </div>
             </Link>
             <p className="text-sm text-text/70 leading-relaxed">
-              Kuzey Ege&apos;nin lezzetlerini, anne eli değmişçesine sofranıza taşıyoruz.
+              Altınoluk&apos;tan Edremit körfezine, Kazdağı&apos;nın lezzetlerini anne eli değmişçesine sofranıza taşıyoruz.
             </p>
             <div className="flex gap-3">
               {socialLinks.map((social) => {

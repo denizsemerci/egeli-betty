@@ -4,10 +4,10 @@ import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
   title: 'Hakkımızda - Egeli Betty\'nin Hikayesi',
-  description: 'Kuzey Ege\'nin iki yakasından sofranıza. Kuşaktan kuşağa aktarılan lezzet mirası ve Egeli Betty\'nin hikayesi.',
+  description: 'Altınoluk kıyılarından Kazdağlarına, Edremit körfezinin lezzetleri sofranızda. Kuşaktan kuşağa aktarılan lezzet mirası ve Egeli Betty\'nin hikayesi.',
   openGraph: {
     title: 'Hakkımızda - Egeli Betty\'nin Hikayesi',
-    description: 'Kuzey Ege\'nin iki yakasından sofranıza. Kuşaktan kuşağa aktarılan lezzet mirası.',
+    description: 'Altınoluk kıyılarından Kazdağlarına, Kuzey Ege\'nin lezzetleri sofranızda. Kuşaktan kuşağa aktarılan lezzet mirası.',
   },
 }
 
@@ -36,7 +36,7 @@ export default function AboutPage() {
               Egeli Betty&apos;nin Hikayesi
             </h1>
             <p className="text-xl md:text-2xl text-white/95 font-light drop-shadow-md">
-              Kuzey Ege&apos;nin İki Yakasından Sofranıza
+              Altınoluk Kıyılarından Kazdağlarına
             </p>
           </div>
         </div>
@@ -53,7 +53,7 @@ export default function AboutPage() {
             </h2>
           </div>
           <p className="text-lg text-text/80 leading-relaxed mb-6">
-            Her şey, Kuzey Ege&apos;nin zeytin ağaçları arasında, deniz kokusunun kekik kokusuna karıştığı o bereketli topraklarda başladı. <span className="font-semibold text-primary">&ldquo;Egeli Betty&rdquo;</span>, aslında sadece bir web sitesi değil; yıllar içinde demlenmiş, kuşaktan kuşağa aktarılmış ve iki yakanın –hem Anadolu&apos;nun hem de karşı kıyının– lezzet sırlarıyla harmanlanmış bir mutfak mirasıdır.
+            Her şey, Altınoluk&apos;tan Edremit körfezine uzanan zeytin ağaçları arasında, Kazdağı&apos;nın şifalı otlarının kokusunun deniz esintisiyle birleştiği o bereketli topraklarda başladı. <span className="font-semibold text-primary">&ldquo;Egeli Betty&rdquo;</span>, aslında sadece bir web sitesi değil; yıllar içinde demlenmiş, kuşaktan kuşağa aktarılmış, Kuzey Ege&apos;nin lezzet sırlarıyla yoğrulmuş bir mutfak mirasıdır.
           </p>
         </div>
 
@@ -66,7 +66,7 @@ export default function AboutPage() {
             </div>
             <h3 className="text-xl font-heading font-bold text-text mb-3">Köklerimiz</h3>
             <p className="text-sm text-text/70 leading-relaxed">
-              Yunanistan&apos;dan Kuzey Ege kıyılarına uzanan göçmen bir ailenin mutfak geleneğini yaşatıyoruz. Zeytinyağının en hası, otların en tazesi bizim mutfağımızın baş tacıdır.
+              Edremit körfezinin bereket dolu topraklarında, Kazdağı eteklerindeki zeytinlikler arasında yeşeren bir mutfak geleneğini yaşatıyoruz. Altınoluk&apos;un taze balıkları, Kaz Dağı&apos;nın şifalı otları bizim mutfağımızın baş tacıdır.
             </p>
           </div>
 
@@ -108,13 +108,13 @@ export default function AboutPage() {
             </p>
 
             <p className="text-lg">
-              Şimdi emekli olsa da, mutfak önlüğünü hiç çıkarmadı. Yunanistan göçmeni bir ailenin kızı olarak, genlerinde taşıdığı o eşsiz damak tadını, Kuzey Ege&apos;nin taptaze otları ve altın sarısı zeytinyağıyla birleştirerek sanatını icra etmeye devam ediyor.
+              Şimdi emekli olsa da, mutfak önlüğünü hiç çıkarmadı. Kuzey Egeli bir ailenin kızı olarak, yıllarca süren deneyimiyle, Kazdağı&apos;nın taptaze otlarını, Edremit zeytinyağının altın sarısı bereketiyle ve Altınoluk&apos;un deniz ürünleriyle harmanlayarak sanatını icra etmeye devam ediyor.
             </p>
 
             <div className="bg-white/60 rounded-2xl p-6 my-8 border-l-4 border-primary">
               <h3 className="text-2xl font-heading font-bold text-text mb-4">Neden Şimdi?</h3>
               <p className="text-lg">
-                Ben, o meşhur yemeklerle büyüyen şanslı kızı olarak, bu lezzetlerin sadece bizim soframızda kalmasına gönlüm razı olmadı. Annemin <span className="italic">&ldquo;el lezzeti&rdquo;</span> dediğimiz o tarifsiz büyüsünü, unutulmaya yüz tutmuş göçmen tariflerini ve Ege&apos;nin şifalı mutfağını tüm dünya ile paylaşmak istedim.
+                Ben, o meşhur yemeklerle büyüyen şanslı kızı olarak, bu lezzetlerin sadece bizim soframızda kalmasına gönlüm razı olmadı. Annemin <span className="italic">&ldquo;el lezzeti&rdquo;</span> dediğimiz o tarifsiz büyüsünü, Kuzey Ege&apos;nin unutulmaya yüz tutmuş geleneksel tariflerini ve Kazdağı&apos;nın şifalı mutfağını tüm dünya ile paylaşmak istedim.
               </p>
             </div>
 
