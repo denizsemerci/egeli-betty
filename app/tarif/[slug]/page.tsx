@@ -87,10 +87,10 @@ export default async function RecipeDetailPage({
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
         />
-        <main className="min-h-screen bg-background">
+        <main className="min-h-screen bg-background pt-20 md:pt-24">
           {/* Hero Image - Full Width */}
           {recipe.image_url && (
-            <section className="relative w-full h-[50vh] min-h-[400px] max-h-[600px] overflow-hidden">
+            <section className="relative w-full h-[50vh] min-h-[400px] max-h-[600px] overflow-hidden -mt-20 md:-mt-24">
               <Image
                 src={recipe.image_url}
                 alt={`${recipe.title} - Egeli Betty`}
