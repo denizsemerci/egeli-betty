@@ -2,13 +2,11 @@
 
 import Link from 'next/link'
 import Image from 'next/image'
-import { Instagram, Facebook, Youtube, Mail, Heart } from 'lucide-react'
+import { Instagram, Mail, Heart } from 'lucide-react'
 import { useState } from 'react'
 
 const socialLinks = [
-  { name: 'Instagram', icon: Instagram, href: '#', color: 'hover:text-pink-500' },
-  { name: 'Facebook', icon: Facebook, href: '#', color: 'hover:text-blue-600' },
-  { name: 'YouTube', icon: Youtube, href: '#', color: 'hover:text-red-600' },
+  { name: 'Instagram', icon: Instagram, href: 'https://www.instagram.com/egelibetty/', color: 'hover:text-pink-500' },
 ]
 
 const quickLinks = [

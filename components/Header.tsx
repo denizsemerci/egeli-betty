@@ -78,13 +78,15 @@ export default function Header() {
                   </Link>
                 )
               })}
-              <Link
-                href="/#recipes"
+              <a
+                href="https://www.instagram.com/egelibetty/"
+                target="_blank"
+                rel="noopener noreferrer"
                 className="px-6 py-2.5 bg-primary text-white rounded-full font-medium hover:bg-primary-dark transition-all shadow-md hover:shadow-lg hover:scale-105 flex items-center gap-2"
               >
                 <ChefHat className="w-4 h-4" />
-                <span>Bugün Ne Pişirsem?</span>
-              </Link>
+                <span>Instagram</span>
+              </a>
             </nav>
 
             {/* Mobile Menu Button */}
@@ -153,13 +155,15 @@ export default function Header() {
 
           {/* Mobile Menu Footer */}
           <div className="p-4 border-t border-warm/20">
-            <Link
-              href="/#recipes"
+            <a
+              href="https://www.instagram.com/egelibetty/"
+              target="_blank"
+              rel="noopener noreferrer"
               className="w-full px-6 py-3 bg-primary text-white rounded-full font-medium hover:bg-primary-dark transition-all shadow-md flex items-center justify-center gap-2"
             >
               <ChefHat className="w-4 h-4" />
-              <span>Bugün Ne Pişirsem?</span>
-            </Link>
+              <span>Instagram&apos;da Takip Et</span>
+            </a>
           </div>
         </div>
       </nav>
