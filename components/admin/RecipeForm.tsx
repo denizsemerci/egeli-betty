@@ -37,6 +37,7 @@ const categories = [
 
 interface RecipeFormProps {
   recipeId?: string // If provided, we're in edit mode
+  draftId?: string // If provided, we're editing a draft
   initialData?: {
     title: string
     description: string
@@ -47,6 +48,7 @@ interface RecipeFormProps {
     steps: string[]
     image_url: string | null
     images?: string[] // Multiple images
+    current_step?: number // For drafts
   }
 }
 
