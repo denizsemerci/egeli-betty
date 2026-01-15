@@ -12,6 +12,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { useToast, ToastContainer } from '@/components/admin/Toast'
 import ImageUpload from '@/components/admin/ImageUpload'
+import MultiImageUpload from '@/components/admin/MultiImageUpload'
 
 const recipeSchema = z.object({
   title: z.string().min(1, 'Başlık gereklidir'),
@@ -45,6 +46,7 @@ interface RecipeFormProps {
     ingredients: string[]
     steps: string[]
     image_url: string | null
+    images?: string[] // Multiple images
   }
 }
 
@@ -56,6 +58,10 @@ export default function RecipeForm({ recipeId, initialData }: RecipeFormProps) {
   const [currentStep, setCurrentStep] = useState(1)
   const [imageFile, setImageFile] = useState<File | null>(null)
   const [imagePreview, setImagePreview] = useState<string | null>(initialData?.image_url || null)
+  const [images, setImages] = useState<string[]>(
+    initialData?.images || (initialData?.image_url ? [initialData.image_url] : [])
+  )
+  const [imageFiles, setImageFiles] = useState<Map<number, File>>(new Map())
   const [uploading, setUploading] = useState(false)
   const [uploadProgress, setUploadProgress] = useState<string>('')
   const [draftSaved, setDraftSaved] = useState(false)
@@ -125,6 +131,7 @@ export default function RecipeForm({ recipeId, initialData }: RecipeFormProps) {
       formData: formValues,
       currentStep,
       imagePreview,
+      images,
       timestamp: new Date().toISOString(),
     }
 
@@ -167,8 +174,12 @@ export default function RecipeForm({ recipeId, initialData }: RecipeFormProps) {
       if (shouldRestore) {
         reset(draftData.formData)
         setCurrentStep(draftData.currentStep || 1)
-        if (draftData.imagePreview) {
+        if (draftData.images && draftData.images.length > 0) {
+          setImages(draftData.images)
+          setImagePreview(draftData.images[0])
+        } else if (draftData.imagePreview) {
           setImagePreview(draftData.imagePreview)
+          setImages([draftData.imagePreview])
         }
         success('Taslak yüklendi!')
       } else {
@@ -208,7 +219,7 @@ export default function RecipeForm({ recipeId, initialData }: RecipeFormProps) {
         clearTimeout(draftTimeoutRef.current)
       }
     }
-  }, [formValues, currentStep, imagePreview, isEditMode, saveDraft])
+  }, [formValues, currentStep, imagePreview, images, isEditMode, saveDraft])
 
   // Load draft on mount
   useEffect(() => {
@@ -238,7 +249,14 @@ export default function RecipeForm({ recipeId, initialData }: RecipeFormProps) {
               ingredients: (data.ingredients || []).map((ing: string) => ({ value: ing })),
               steps: (data.steps || []).map((step: string) => ({ value: step })),
             })
-            setImagePreview(data.image_url)
+            // Load images array if exists, otherwise use image_url
+            if (data.images && Array.isArray(data.images) && data.images.length > 0) {
+              setImages(data.images)
+              setImagePreview(data.images[0])
+            } else if (data.image_url) {
+              setImages([data.image_url])
+              setImagePreview(data.image_url)
+            }
           }
         } catch (err) {
           console.error('Error loading recipe:', err)
@@ -313,41 +331,61 @@ export default function RecipeForm({ recipeId, initialData }: RecipeFormProps) {
         throw new Error('Supabase client başlatılamadı. Lütfen sayfayı yenileyin.')
       }
 
-      let imageUrl = imagePreview || null
-      const currentImageFile = imageFileRef.current || imageFile
-
-      // Upload new image if file is selected
-      if (currentImageFile) {
-        try {
-          // If editing and has existing image, delete old one first
-          if (isEditMode && initialData?.image_url && currentImageFile) {
-            const oldImagePath = initialData.image_url.split('/').slice(-2).join('/')
-            await supabase.storage.from('recipe-images').remove([oldImagePath])
+      // Upload multiple images
+      const uploadedImages: string[] = []
+      
+      if (images.length > 0) {
+        setUploadProgress(`Fotoğraflar yükleniyor... (0/${images.length})`)
+        
+        // Helper function to convert data URL to File
+        const dataURLtoFile = (dataurl: string, filename: string): File => {
+          const arr = dataurl.split(',')
+          const mime = arr[0].match(/:(.*?);/)?.[1] || 'image/jpeg'
+          const bstr = atob(arr[1])
+          let n = bstr.length
+          const u8arr = new Uint8Array(n)
+          while (n--) {
+            u8arr[n] = bstr.charCodeAt(n)
           }
-
-          imageUrl = await uploadImage(currentImageFile)
-          if (!imageUrl) {
-            throw new Error('Fotoğraf yüklenemedi: URL alınamadı')
-          }
-          setUploadProgress('Görsel başarıyla yüklendi!')
-        } catch (imageError: any) {
-          const errorMessage = imageError?.message || 'Fotoğraf yüklenemedi'
-          setUploadProgress('')
-          
-          const shouldContinue = window.confirm(
-            `Fotoğraf yüklenemedi!\n\nHata: ${errorMessage}\n\nFotoğraf olmadan devam etmek ister misiniz?`
-          )
-          if (!shouldContinue) {
-            setUploading(false)
-            setUploadProgress('')
-            return
-          }
-          imageUrl = isEditMode ? initialData?.image_url || null : null
+          return new File([u8arr], filename, { type: mime })
         }
-      } else if (isEditMode) {
-        // Keep existing image if no new file selected
-        imageUrl = initialData?.image_url || null
+
+        for (let i = 0; i < images.length; i++) {
+          const image = images[i]
+          
+          // Check if it's a data URL (base64) or already uploaded URL
+          if (image.startsWith('data:')) {
+            // New image, needs to be uploaded
+            try {
+              setUploadProgress(`Fotoğraf ${i + 1}/${images.length} yükleniyor...`)
+              const file = dataURLtoFile(image, `recipe-image-${i}.jpg`)
+              const uploadedUrl = await uploadImage(file)
+              if (uploadedUrl) {
+                uploadedImages.push(uploadedUrl)
+              }
+            } catch (imageError: any) {
+              console.error(`Error uploading image ${i + 1}:`, imageError)
+              // Skip failed images, continue with others
+              const shouldSkip = window.confirm(
+                `Fotoğraf ${i + 1} yüklenemedi!\n\nHata: ${imageError?.message || 'Bilinmeyen hata'}\n\nBu fotoğrafı atlayıp devam etmek ister misiniz?`
+              )
+              if (!shouldSkip) {
+                setUploading(false)
+                setUploadProgress('')
+                return
+              }
+            }
+          } else {
+            // Already uploaded URL, use directly
+            uploadedImages.push(image)
+          }
+        }
+        
+        setUploadProgress('Fotoğraflar başarıyla yüklendi!')
       }
+
+      // First image is the main image (for backward compatibility)
+      const imageUrl = uploadedImages.length > 0 ? uploadedImages[0] : null
 
       setUploadProgress('Tarif kaydediliyor...')
 
@@ -377,7 +415,7 @@ export default function RecipeForm({ recipeId, initialData }: RecipeFormProps) {
         }
       }
 
-      const recipeData = {
+      const recipeData: any = {
         title: data.title.trim(),
         slug: isEditMode ? undefined : slug, // Don't update slug when editing
         description: data.description.trim(),
@@ -386,7 +424,8 @@ export default function RecipeForm({ recipeId, initialData }: RecipeFormProps) {
         servings: Number(data.servings),
         ingredients: data.ingredients.map((i) => i.value.trim()).filter(Boolean),
         steps: data.steps.map((s) => s.value.trim()).filter(Boolean),
-        image_url: imageUrl,
+        image_url: imageUrl, // First image for backward compatibility
+        images: uploadedImages.length > 0 ? uploadedImages : null, // All images array
         user_email: 'deniz.semerci1036@gmail.com',
       }
 
@@ -725,36 +764,27 @@ export default function RecipeForm({ recipeId, initialData }: RecipeFormProps) {
                 className="space-y-6"
               >
                 <h2 className="text-2xl font-heading font-semibold text-text mb-6">
-                  Fotoğraf Ekle (İsteğe Bağlı)
+                  Fotoğraflar Ekle (İsteğe Bağlı)
                 </h2>
+                <p className="text-text/70 mb-6">
+                  Tarifiniz için birden fazla fotoğraf ekleyebilirsiniz. İlk fotoğraf ana fotoğraf olarak kullanılacaktır.
+                </p>
 
-                <ImageUpload
-                  imagePreview={imagePreview}
-                  onImageChange={(file) => {
-                    setImageFile(file)
-                    imageFileRef.current = file
-                    if (file) {
-                      const reader = new FileReader()
-                      reader.onloadend = () => {
-                        const preview = reader.result as string
-                        setImagePreview(preview)
-                        // Save draft when image is added
-                        if (!isEditMode) {
-                          setTimeout(() => saveDraft(), 500)
-                        }
-                      }
-                      reader.readAsDataURL(file)
+                <MultiImageUpload
+                  images={images}
+                  onImagesChange={(newImages) => {
+                    setImages(newImages)
+                    if (newImages.length > 0) {
+                      setImagePreview(newImages[0])
+                    } else {
+                      setImagePreview(null)
                     }
-                  }}
-                  onImageRemove={() => {
-                    setImageFile(null)
-                    imageFileRef.current = null
-                    setImagePreview(null)
-                    // Save draft when image is removed
+                    // Save draft when images change
                     if (!isEditMode) {
                       setTimeout(() => saveDraft(), 500)
                     }
                   }}
+                  maxImages={10}
                 />
               </motion.div>
             )}
