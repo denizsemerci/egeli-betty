@@ -1,11 +1,11 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { generateSlug } from '@/lib/utils'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ArrowLeft, ArrowRight, Upload, X, Loader2 } from 'lucide-react'
+import { ArrowLeft, ArrowRight, Upload, X, Loader2, Save } from 'lucide-react'
 import Image from 'next/image'
 import { useForm, useFieldArray } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -48,6 +48,9 @@ interface RecipeFormProps {
   }
 }
 
+const DRAFT_STORAGE_KEY = (isEdit: boolean, id?: string) => 
+  `egeli-betty-recipe-draft-${isEdit ? `edit-${id}` : 'new'}`
+
 export default function RecipeForm({ recipeId, initialData }: RecipeFormProps) {
   const isEditMode = !!recipeId
   const [currentStep, setCurrentStep] = useState(1)
@@ -55,7 +58,9 @@ export default function RecipeForm({ recipeId, initialData }: RecipeFormProps) {
   const [imagePreview, setImagePreview] = useState<string | null>(initialData?.image_url || null)
   const [uploading, setUploading] = useState(false)
   const [uploadProgress, setUploadProgress] = useState<string>('')
+  const [draftSaved, setDraftSaved] = useState(false)
   const imageFileRef = useRef<File | null>(null)
+  const draftTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const router = useRouter()
   const [supabase, setSupabase] = useState<any>(null)
   const { toasts, success, error, removeToast } = useToast()
@@ -70,6 +75,7 @@ export default function RecipeForm({ recipeId, initialData }: RecipeFormProps) {
     register,
     handleSubmit,
     control,
+    watch,
     formState: { errors },
     reset,
   } = useForm<RecipeFormData>({
@@ -90,6 +96,9 @@ export default function RecipeForm({ recipeId, initialData }: RecipeFormProps) {
         },
   })
 
+  // Watch all form values for draft saving
+  const formValues = watch()
+
   const {
     fields: ingredientFields,
     append: appendIngredient,
@@ -107,6 +116,104 @@ export default function RecipeForm({ recipeId, initialData }: RecipeFormProps) {
     control,
     name: 'steps',
   })
+
+  // Save draft to localStorage
+  const saveDraft = useCallback(() => {
+    if (typeof window === 'undefined') return
+
+    const draftData = {
+      formData: formValues,
+      currentStep,
+      imagePreview,
+      timestamp: new Date().toISOString(),
+    }
+
+    try {
+      localStorage.setItem(
+        DRAFT_STORAGE_KEY(isEditMode, recipeId),
+        JSON.stringify(draftData)
+      )
+      setDraftSaved(true)
+      setTimeout(() => setDraftSaved(false), 2000)
+    } catch (err) {
+      console.error('Error saving draft:', err)
+    }
+  }, [formValues, currentStep, imagePreview, isEditMode, recipeId])
+
+  // Load draft from localStorage
+  const loadDraft = useCallback(() => {
+    if (typeof window === 'undefined' || isEditMode || initialData) return
+
+    try {
+      const draftJson = localStorage.getItem(DRAFT_STORAGE_KEY(false))
+      if (!draftJson) return
+
+      const draftData = JSON.parse(draftJson)
+      
+      // Check if draft is recent (within 7 days)
+      const draftDate = new Date(draftData.timestamp)
+      const daysDiff = (Date.now() - draftDate.getTime()) / (1000 * 60 * 60 * 24)
+      if (daysDiff > 7) {
+        localStorage.removeItem(DRAFT_STORAGE_KEY(false))
+        return
+      }
+
+      // Ask user if they want to restore draft
+      const shouldRestore = window.confirm(
+        'Kaydedilmemiş bir taslak bulundu. Yüklemek ister misiniz?\n\n' +
+        `Kayıt Tarihi: ${draftDate.toLocaleString('tr-TR')}`
+      )
+
+      if (shouldRestore) {
+        reset(draftData.formData)
+        setCurrentStep(draftData.currentStep || 1)
+        if (draftData.imagePreview) {
+          setImagePreview(draftData.imagePreview)
+        }
+        success('Taslak yüklendi!')
+      } else {
+        // User chose not to restore, delete draft
+        localStorage.removeItem(DRAFT_STORAGE_KEY(false))
+      }
+    } catch (err) {
+      console.error('Error loading draft:', err)
+    }
+  }, [isEditMode, initialData, reset, success])
+
+  // Auto-save draft on form changes (debounced)
+  useEffect(() => {
+    if (isEditMode) return // Don't save drafts for edit mode
+
+    // Clear previous timeout
+    if (draftTimeoutRef.current) {
+      clearTimeout(draftTimeoutRef.current)
+    }
+
+    // Save draft after 2 seconds of inactivity
+    draftTimeoutRef.current = setTimeout(() => {
+      // Only save if form has some content
+      const hasContent = 
+        formValues.title?.trim() || 
+        formValues.description?.trim() || 
+        formValues.ingredients?.some((ing: any) => ing.value?.trim()) ||
+        formValues.steps?.some((step: any) => step.value?.trim())
+
+      if (hasContent) {
+        saveDraft()
+      }
+    }, 2000)
+
+    return () => {
+      if (draftTimeoutRef.current) {
+        clearTimeout(draftTimeoutRef.current)
+      }
+    }
+  }, [formValues, currentStep, imagePreview, isEditMode, saveDraft])
+
+  // Load draft on mount
+  useEffect(() => {
+    loadDraft()
+  }, [loadDraft])
 
   // Load recipe data if in edit mode
   useEffect(() => {
@@ -292,6 +399,11 @@ export default function RecipeForm({ recipeId, initialData }: RecipeFormProps) {
 
         if (updateError) throw updateError
 
+        // Clear draft on successful update
+        if (typeof window !== 'undefined' && recipeId) {
+          localStorage.removeItem(DRAFT_STORAGE_KEY(true, recipeId))
+        }
+
         success('Tarif başarıyla güncellendi!')
         setTimeout(() => {
           router.push('/admin/tarifler')
@@ -315,6 +427,11 @@ export default function RecipeForm({ recipeId, initialData }: RecipeFormProps) {
           throw new Error('Tarif kaydedilemedi. Lütfen tekrar deneyin.')
         }
 
+        // Clear draft on successful save
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem(DRAFT_STORAGE_KEY(false))
+        }
+
         success('Tarif başarıyla eklendi!')
         setTimeout(() => {
           router.push(`/tarif/${slug}`)
@@ -331,12 +448,20 @@ export default function RecipeForm({ recipeId, initialData }: RecipeFormProps) {
   const nextStep = () => {
     if (currentStep < 4) {
       setCurrentStep(currentStep + 1)
+      // Save draft when moving to next step
+      if (!isEditMode) {
+        saveDraft()
+      }
     }
   }
 
   const prevStep = () => {
     if (currentStep > 1) {
       setCurrentStep(currentStep - 1)
+      // Save draft when moving to previous step
+      if (!isEditMode) {
+        saveDraft()
+      }
     }
   }
 
@@ -346,13 +471,21 @@ export default function RecipeForm({ recipeId, initialData }: RecipeFormProps) {
       
       <div className="space-y-6">
         {/* Header */}
-        <div>
-          <h1 className="text-3xl font-heading font-bold text-text mb-2">
-            {isEditMode ? 'Tarif Düzenle' : 'Yeni Tarif Ekle'}
-          </h1>
-          <p className="text-text/60">
-            {isEditMode ? 'Tarif bilgilerini güncelleyin' : 'Adım adım tarif ekleyin'}
-          </p>
+        <div className="flex items-start justify-between">
+          <div>
+            <h1 className="text-3xl font-heading font-bold text-text mb-2">
+              {isEditMode ? 'Tarif Düzenle' : 'Yeni Tarif Ekle'}
+            </h1>
+            <p className="text-text/60">
+              {isEditMode ? 'Tarif bilgilerini güncelleyin' : 'Adım adım tarif ekleyin'}
+            </p>
+          </div>
+          {!isEditMode && draftSaved && (
+            <div className="flex items-center gap-2 px-4 py-2 bg-green-50 text-green-700 rounded-lg border border-green-200">
+              <Save className="w-4 h-4" />
+              <span className="text-sm font-medium">Taslak kaydedildi</span>
+            </div>
+          )}
         </div>
 
         {/* Progress Steps */}
@@ -603,7 +736,12 @@ export default function RecipeForm({ recipeId, initialData }: RecipeFormProps) {
                     if (file) {
                       const reader = new FileReader()
                       reader.onloadend = () => {
-                        setImagePreview(reader.result as string)
+                        const preview = reader.result as string
+                        setImagePreview(preview)
+                        // Save draft when image is added
+                        if (!isEditMode) {
+                          setTimeout(() => saveDraft(), 500)
+                        }
                       }
                       reader.readAsDataURL(file)
                     }
@@ -612,6 +750,10 @@ export default function RecipeForm({ recipeId, initialData }: RecipeFormProps) {
                     setImageFile(null)
                     imageFileRef.current = null
                     setImagePreview(null)
+                    // Save draft when image is removed
+                    if (!isEditMode) {
+                      setTimeout(() => saveDraft(), 500)
+                    }
                   }}
                 />
               </motion.div>
