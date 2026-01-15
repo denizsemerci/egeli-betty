@@ -53,9 +53,12 @@ interface RecipeFormProps {
 const DRAFT_STORAGE_KEY = (isEdit: boolean, id?: string) => 
   `egeli-betty-recipe-draft-${isEdit ? `edit-${id}` : 'new'}`
 
-export default function RecipeForm({ recipeId, initialData }: RecipeFormProps) {
+export default function RecipeForm({ recipeId, draftId, initialData }: RecipeFormProps) {
   const isEditMode = !!recipeId
-  const [currentStep, setCurrentStep] = useState(1)
+  const isDraftMode = !!draftId
+  const [currentStep, setCurrentStep] = useState(
+    isDraftMode && initialData?.current_step ? initialData.current_step : 1
+  )
   const [imageFile, setImageFile] = useState<File | null>(null)
   const [imagePreview, setImagePreview] = useState<string | null>(initialData?.image_url || null)
   const [images, setImages] = useState<string[]>(
@@ -64,9 +67,9 @@ export default function RecipeForm({ recipeId, initialData }: RecipeFormProps) {
   const [imageFiles, setImageFiles] = useState<Map<number, File>>(new Map())
   const [uploading, setUploading] = useState(false)
   const [uploadProgress, setUploadProgress] = useState<string>('')
-  const [draftSaved, setDraftSaved] = useState(false)
+  const [savingDraft, setSavingDraft] = useState(false)
+  const [currentDraftId, setCurrentDraftId] = useState<string | null>(draftId || null)
   const imageFileRef = useRef<File | null>(null)
-  const draftTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const router = useRouter()
   const [supabase, setSupabase] = useState<any>(null)
   const { toasts, success, error, removeToast } = useToast()
@@ -123,108 +126,59 @@ export default function RecipeForm({ recipeId, initialData }: RecipeFormProps) {
     name: 'steps',
   })
 
-  // Save draft to localStorage
-  const saveDraft = useCallback(() => {
-    if (typeof window === 'undefined') return
+  // Save draft to database
+  const saveDraft = useCallback(async () => {
+    if (!supabase || isEditMode) return
 
-    const draftData = {
-      formData: formValues,
-      currentStep,
-      imagePreview,
-      images,
-      timestamp: new Date().toISOString(),
-    }
-
+    setSavingDraft(true)
     try {
-      localStorage.setItem(
-        DRAFT_STORAGE_KEY(isEditMode, recipeId),
-        JSON.stringify(draftData)
-      )
-      setDraftSaved(true)
-      setTimeout(() => setDraftSaved(false), 2000)
-    } catch (err) {
-      console.error('Error saving draft:', err)
-    }
-  }, [formValues, currentStep, imagePreview, isEditMode, recipeId])
-
-  // Load draft from localStorage
-  const loadDraft = useCallback(() => {
-    if (typeof window === 'undefined' || isEditMode || initialData) return
-
-    try {
-      const draftJson = localStorage.getItem(DRAFT_STORAGE_KEY(false))
-      if (!draftJson) return
-
-      const draftData = JSON.parse(draftJson)
-      
-      // Check if draft is recent (within 7 days)
-      const draftDate = new Date(draftData.timestamp)
-      const daysDiff = (Date.now() - draftDate.getTime()) / (1000 * 60 * 60 * 24)
-      if (daysDiff > 7) {
-        localStorage.removeItem(DRAFT_STORAGE_KEY(false))
-        return
+      const draftData = {
+        title: formValues.title?.trim() || null,
+        description: formValues.description?.trim() || null,
+        category: formValues.category || null,
+        prep_time: formValues.prep_time || null,
+        servings: formValues.servings || null,
+        ingredients: formValues.ingredients?.map((ing: any) => ing.value?.trim()).filter(Boolean) || [],
+        steps: formValues.steps?.map((step: any) => step.value?.trim()).filter(Boolean) || [],
+        images: images.length > 0 ? images : null,
+        image_url: images.length > 0 ? images[0] : null,
+        current_step: currentStep,
+        user_email: 'deniz.semerci1036@gmail.com',
+        updated_at: new Date().toISOString(),
       }
 
-      // Ask user if they want to restore draft
-      const shouldRestore = window.confirm(
-        'Kaydedilmemiş bir taslak bulundu. Yüklemek ister misiniz?\n\n' +
-        `Kayıt Tarihi: ${draftDate.toLocaleString('tr-TR')}`
-      )
+      const targetId = isDraftMode ? draftId : currentDraftId
+      if (targetId) {
+        // Update existing draft
+        const { error: updateError } = await supabase
+          .from('drafts')
+          .update(draftData)
+          .eq('id', targetId)
 
-      if (shouldRestore) {
-        reset(draftData.formData)
-        setCurrentStep(draftData.currentStep || 1)
-        if (draftData.images && draftData.images.length > 0) {
-          setImages(draftData.images)
-          setImagePreview(draftData.images[0])
-        } else if (draftData.imagePreview) {
-          setImagePreview(draftData.imagePreview)
-          setImages([draftData.imagePreview])
-        }
-        success('Taslak yüklendi!')
+        if (updateError) throw updateError
+        success('Taslak güncellendi!')
       } else {
-        // User chose not to restore, delete draft
-        localStorage.removeItem(DRAFT_STORAGE_KEY(false))
+        // Create new draft
+        const { data: insertedData, error: insertError } = await supabase
+          .from('drafts')
+          .insert(draftData)
+          .select()
+          .single()
+
+        if (insertError) throw insertError
+        if (insertedData) {
+          setCurrentDraftId(insertedData.id)
+          success('Taslak kaydedildi!')
+        }
       }
-    } catch (err) {
-      console.error('Error loading draft:', err)
+    } catch (err: any) {
+      console.error('Error saving draft:', err)
+      error(err.message || 'Taslak kaydedilirken bir hata oluştu')
+    } finally {
+      setSavingDraft(false)
     }
-  }, [isEditMode, initialData, reset, success])
+  }, [formValues, currentStep, images, isEditMode, isDraftMode, supabase, draftId, currentDraftId, success, error])
 
-  // Auto-save draft on form changes (debounced)
-  useEffect(() => {
-    if (isEditMode) return // Don't save drafts for edit mode
-
-    // Clear previous timeout
-    if (draftTimeoutRef.current) {
-      clearTimeout(draftTimeoutRef.current)
-    }
-
-    // Save draft after 2 seconds of inactivity
-    draftTimeoutRef.current = setTimeout(() => {
-      // Only save if form has some content
-      const hasContent = 
-        formValues.title?.trim() || 
-        formValues.description?.trim() || 
-        formValues.ingredients?.some((ing: any) => ing.value?.trim()) ||
-        formValues.steps?.some((step: any) => step.value?.trim())
-
-      if (hasContent) {
-        saveDraft()
-      }
-    }, 2000)
-
-    return () => {
-      if (draftTimeoutRef.current) {
-        clearTimeout(draftTimeoutRef.current)
-      }
-    }
-  }, [formValues, currentStep, imagePreview, images, isEditMode, saveDraft])
-
-  // Load draft on mount
-  useEffect(() => {
-    loadDraft()
-  }, [loadDraft])
 
   // Load recipe data if in edit mode
   useEffect(() => {
@@ -466,9 +420,10 @@ export default function RecipeForm({ recipeId, initialData }: RecipeFormProps) {
           throw new Error('Tarif kaydedilemedi. Lütfen tekrar deneyin.')
         }
 
-        // Clear draft on successful save
-        if (typeof window !== 'undefined') {
-          localStorage.removeItem(DRAFT_STORAGE_KEY(false))
+        // Delete draft if exists
+        const targetDraftId = isDraftMode ? draftId : currentDraftId
+        if (targetDraftId && supabase) {
+          await supabase.from('drafts').delete().eq('id', targetDraftId)
         }
 
         success('Tarif başarıyla eklendi!')
@@ -510,21 +465,13 @@ export default function RecipeForm({ recipeId, initialData }: RecipeFormProps) {
       
       <div className="space-y-6">
         {/* Header */}
-        <div className="flex items-start justify-between">
-          <div>
-            <h1 className="text-3xl font-heading font-bold text-text mb-2">
-              {isEditMode ? 'Tarif Düzenle' : 'Yeni Tarif Ekle'}
-            </h1>
-            <p className="text-text/60">
-              {isEditMode ? 'Tarif bilgilerini güncelleyin' : 'Adım adım tarif ekleyin'}
-            </p>
-          </div>
-          {!isEditMode && draftSaved && (
-            <div className="flex items-center gap-2 px-4 py-2 bg-green-50 text-green-700 rounded-lg border border-green-200">
-              <Save className="w-4 h-4" />
-              <span className="text-sm font-medium">Taslak kaydedildi</span>
-            </div>
-          )}
+        <div>
+          <h1 className="text-3xl font-heading font-bold text-text mb-2">
+            {isEditMode ? 'Tarif Düzenle' : 'Yeni Tarif Ekle'}
+          </h1>
+          <p className="text-text/60">
+            {isEditMode ? 'Tarif bilgilerini güncelleyin' : 'Adım adım tarif ekleyin'}
+          </p>
         </div>
 
         {/* Progress Steps */}
@@ -791,7 +738,7 @@ export default function RecipeForm({ recipeId, initialData }: RecipeFormProps) {
           </AnimatePresence>
 
           {/* Navigation Buttons */}
-          <div className="flex justify-between mt-8 pt-6 border-t border-warm/30">
+          <div className="flex justify-between items-center mt-8 pt-6 border-t border-warm/30 gap-4">
             <button
               type="button"
               onClick={prevStep}
@@ -802,22 +749,39 @@ export default function RecipeForm({ recipeId, initialData }: RecipeFormProps) {
               Geri
             </button>
 
-            {currentStep < 4 ? (
-              <button
-                type="button"
-                onClick={nextStep}
-                className="px-6 py-3 bg-primary text-white rounded-xl hover:bg-primary-dark transition-colors flex items-center gap-2"
-              >
-                İleri
-                <ArrowRight className="w-4 h-4" />
-              </button>
-            ) : (
-              <div className="flex flex-col items-end gap-2">
-                {uploadProgress && (
-                  <p className="text-sm text-primary font-medium">
-                    {uploadProgress}
-                  </p>
-                )}
+            <div className="flex items-center gap-3">
+              {/* Save Draft Button - Show for new recipes and drafts */}
+              {!isEditMode && (
+                <button
+                  type="button"
+                  onClick={saveDraft}
+                  disabled={savingDraft}
+                  className="px-4 py-3 rounded-xl border-2 border-secondary text-secondary hover:bg-secondary/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                >
+                  {savingDraft ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Kaydediliyor...
+                    </>
+                  ) : (
+                    <>
+                      <Save className="w-4 h-4" />
+                      Taslağı Kaydet
+                    </>
+                  )}
+                </button>
+              )}
+
+              {currentStep < 4 ? (
+                <button
+                  type="button"
+                  onClick={nextStep}
+                  className="px-6 py-3 bg-primary text-white rounded-xl hover:bg-primary-dark transition-colors flex items-center gap-2"
+                >
+                  İleri
+                  <ArrowRight className="w-4 h-4" />
+                </button>
+              ) : (
                 <button
                   type="submit"
                   disabled={uploading}
@@ -835,8 +799,8 @@ export default function RecipeForm({ recipeId, initialData }: RecipeFormProps) {
                     </>
                   )}
                 </button>
-              </div>
-            )}
+              )}
+            </div>
           </div>
         </form>
       </div>
