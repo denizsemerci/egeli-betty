@@ -1,14 +1,15 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useParams } from 'next/navigation'
+import { useParams, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import RecipeForm from '@/components/admin/RecipeForm'
 import { useToast, ToastContainer } from '@/components/admin/Toast'
 
-export default function EditRecipePage() {
+export default function EditDraftPage() {
   const params = useParams()
-  const recipeId = params.id as string
+  const router = useRouter()
+  const draftId = params.id as string
   const [initialData, setInitialData] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [supabase, setSupabase] = useState<any>(null)
@@ -21,25 +22,25 @@ export default function EditRecipePage() {
   }, [])
 
   useEffect(() => {
-    if (!supabase || !recipeId) return
+    if (!supabase || !draftId) return
 
-    const loadRecipe = async () => {
+    const loadDraft = async () => {
       try {
         const { data, error: fetchError } = await supabase
-          .from('recipes')
+          .from('drafts')
           .select('*')
-          .eq('id', recipeId)
+          .eq('id', draftId)
           .single()
 
         if (fetchError) throw fetchError
 
         if (data) {
           setInitialData({
-            title: data.title,
-            description: data.description,
-            category: data.category,
-            prep_time: data.prep_time,
-            servings: data.servings,
+            title: data.title || '',
+            description: data.description || '',
+            category: data.category || '',
+            prep_time: data.prep_time || 0,
+            servings: data.servings || 0,
             ingredients: data.ingredients || [],
             steps: data.steps || [],
             image_url: data.image_url,
@@ -48,18 +49,19 @@ export default function EditRecipePage() {
               : data.image_url 
                 ? [data.image_url] 
                 : [],
+            current_step: data.current_step || 1,
           })
         }
       } catch (err: any) {
-        console.error('Error loading recipe:', err)
-        error('Tarif yüklenirken bir hata oluştu')
+        console.error('Error loading draft:', err)
+        error('Taslak yüklenirken bir hata oluştu')
       } finally {
         setLoading(false)
       }
     }
 
-    loadRecipe()
-  }, [supabase, recipeId, error])
+    loadDraft()
+  }, [supabase, draftId, error])
 
   if (loading) {
     return (
@@ -72,7 +74,13 @@ export default function EditRecipePage() {
   if (!initialData) {
     return (
       <div className="text-center py-16">
-        <p className="text-text/60 text-lg mb-4">Tarif bulunamadı</p>
+        <p className="text-text/60 text-lg mb-4">Taslak bulunamadı</p>
+        <button
+          onClick={() => router.push('/admin/taslaklar')}
+          className="px-6 py-3 bg-primary text-white rounded-xl hover:bg-primary-dark transition-colors"
+        >
+          Taslaklara Dön
+        </button>
       </div>
     )
   }
@@ -80,7 +88,7 @@ export default function EditRecipePage() {
   return (
     <>
       <ToastContainer toasts={toasts} onClose={removeToast} />
-      <RecipeForm recipeId={recipeId} initialData={initialData} />
+      <RecipeForm initialData={initialData} draftId={draftId} />
     </>
   )
 }

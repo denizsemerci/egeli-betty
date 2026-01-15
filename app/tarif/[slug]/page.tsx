@@ -2,7 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { createStaticClient } from '@/lib/supabase/static'
 import { notFound } from 'next/navigation'
 import Image from 'next/image'
-import { Clock, Users } from 'lucide-react'
+import { Clock, Users, ChevronLeft, ChevronRight } from 'lucide-react'
 import IngredientsList from '@/components/IngredientsList'
 import InstructionsList from '@/components/InstructionsList'
 import ShareButton from '@/components/ShareButton'
@@ -10,6 +10,7 @@ import RelatedRecipes from '@/components/RelatedRecipes'
 import AuthorBadge from '@/components/AuthorBadge'
 import { generateRecipeMetadata, generateRecipeStructuredData } from '@/lib/seo'
 import type { Metadata } from 'next'
+import RecipeImageGallery from '@/components/RecipeImageGallery'
 
 export async function generateStaticParams() {
   try {
@@ -88,47 +89,21 @@ export default async function RecipeDetailPage({
           dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
         />
         <main className="min-h-screen bg-background pt-20 md:pt-24">
-          {/* Hero Image - Full Width */}
-          {recipe.image_url && (
-            <section className="relative w-full h-[50vh] min-h-[400px] max-h-[600px] overflow-hidden -mt-20 md:-mt-24">
-              <Image
-                src={recipe.image_url}
-                alt={`${recipe.title} - Egeli Betty`}
-                fill
-                className="object-cover"
-                priority
-                sizes="100vw"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent" />
-              
-              {/* Overlay Content */}
-              <div className="absolute bottom-0 left-0 right-0 p-8 md:p-12 text-white">
-                <div className="container mx-auto max-w-4xl">
-                  <div className="flex items-center gap-3 mb-3">
-                    <span className="px-4 py-1.5 bg-white/20 backdrop-blur-sm rounded-full text-sm font-semibold">
-                      {recipe.category}
-                    </span>
-                    <div className="flex items-center gap-4 text-white/90 text-sm">
-                      <div className="flex items-center gap-1.5">
-                        <Clock className="w-4 h-4" />
-                        <span>{recipe.prep_time} dk</span>
-                      </div>
-                      <div className="flex items-center gap-1.5">
-                        <Users className="w-4 h-4" />
-                        <span>{recipe.servings} kişilik</span>
-                      </div>
-                    </div>
-                  </div>
-                  <h1 className="text-4xl md:text-5xl lg:text-6xl font-heading font-bold mb-3 drop-shadow-lg">
-                    {recipe.title}
-                  </h1>
-                  <p className="text-lg md:text-xl text-white/95 max-w-3xl drop-shadow-md">
-                    {recipe.description}
-                  </p>
-                </div>
-              </div>
-            </section>
-          )}
+          {/* Hero Image Gallery - Full Width */}
+          {(recipe.images && Array.isArray(recipe.images) && recipe.images.length > 0) || recipe.image_url ? (
+            <RecipeImageGallery
+              images={recipe.images && Array.isArray(recipe.images) && recipe.images.length > 0 
+                ? recipe.images 
+                : recipe.image_url 
+                  ? [recipe.image_url] 
+                  : []}
+              title={recipe.title}
+              description={recipe.description}
+              category={recipe.category}
+              prepTime={recipe.prep_time}
+              servings={recipe.servings}
+            />
+          ) : null}
 
           <article className="container mx-auto px-4 py-8 md:py-12 max-w-4xl">
             {/* Recipe Meta - If no hero image */}

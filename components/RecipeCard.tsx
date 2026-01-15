@@ -14,6 +14,7 @@ interface Recipe {
   prep_time: number
   servings: number
   image_url: string | null
+  images?: string[] | null
   category: string
 }
 
@@ -33,6 +34,12 @@ export default function RecipeCard({ recipe }: RecipeCardProps) {
   const { isFavorite, toggleFavorite, isLoaded } = useFavorites()
   const favorite = isLoaded && isFavorite(recipe.id)
 
+  // Get first image from images array or fallback to image_url
+  const displayImage = 
+    (recipe.images && Array.isArray(recipe.images) && recipe.images.length > 0)
+      ? recipe.images[0]
+      : recipe.image_url
+
   const handleFavoriteClick = (e: React.MouseEvent) => {
     e.preventDefault()
     e.stopPropagation()
@@ -51,10 +58,10 @@ export default function RecipeCard({ recipe }: RecipeCardProps) {
         <div className="bg-surface rounded-3xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer h-full flex flex-col border border-warm/30 hover:border-primary/50">
           {/* Image Section */}
           <div className="relative w-full h-56 overflow-hidden bg-gradient-to-br from-secondary/20 to-primary/10">
-            {recipe.image_url ? (
+            {displayImage ? (
               <>
                 <Image
-                  src={recipe.image_url}
+                  src={displayImage}
                   alt={`${recipe.title} - Egeli Betty`}
                   fill
                   className="object-cover group-hover:scale-110 transition-transform duration-500"
@@ -62,6 +69,12 @@ export default function RecipeCard({ recipe }: RecipeCardProps) {
                   loading="lazy"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                {/* Multiple images indicator */}
+                {recipe.images && Array.isArray(recipe.images) && recipe.images.length > 1 && (
+                  <div className="absolute top-2 left-2 px-2 py-1 bg-black/60 backdrop-blur-sm rounded text-white text-xs font-medium">
+                    {recipe.images.length} fotoğraf
+                  </div>
+                )}
               </>
             ) : (
               <div className="w-full h-full flex items-center justify-center">
