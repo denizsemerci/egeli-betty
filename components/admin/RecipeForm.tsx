@@ -15,13 +15,13 @@ import ImageUpload from '@/components/admin/ImageUpload'
 import MultiImageUpload from '@/components/admin/MultiImageUpload'
 
 const recipeSchema = z.object({
-  title: z.string().min(1, 'Başlık gereklidir'),
-  description: z.string().min(1, 'Açıklama gereklidir'),
-  category: z.string().min(1, 'Kategori seçilmelidir'),
-  prep_time: z.number().min(1, 'Hazırlık süresi gereklidir'),
-  servings: z.number().min(1, 'Porsiyon sayısı gereklidir'),
-  ingredients: z.array(z.object({ value: z.string().min(1, 'Malzeme adı gereklidir') })).min(1, 'En az bir malzeme eklenmelidir'),
-  steps: z.array(z.object({ value: z.string().min(1, 'Adım açıklaması gereklidir') })).min(1, 'En az bir adım eklenmelidir'),
+  title: z.string().default(''),
+  description: z.string().default(''),
+  category: z.string().default(''),
+  prep_time: z.number().default(0),
+  servings: z.number().default(0),
+  ingredients: z.array(z.object({ value: z.string() })).default([{ value: '' }]),
+  steps: z.array(z.object({ value: z.string() })).default([{ value: '' }]),
 })
 
 type RecipeFormData = z.infer<typeof recipeSchema>
@@ -365,7 +365,7 @@ export default function RecipeForm({ recipeId, draftId, initialData }: RecipeFor
       setUploadProgress('Tarif kaydediliyor...')
 
       // Generate unique slug
-      let baseSlug = generateSlug(data.title)
+      let baseSlug = generateSlug((data.title || '').trim() || 'tarif')
       let slug = baseSlug
       
       if (!isEditMode) {
@@ -390,17 +390,25 @@ export default function RecipeForm({ recipeId, draftId, initialData }: RecipeFor
         }
       }
 
+      const title = (data.title || '').trim() || 'İsimsiz Tarif'
+      const description = (data.description || '').trim() || ''
+      const category = (data.category || '').trim() || categories[0]
+      const prepTime = Number(data.prep_time) || 0
+      const servingsCount = Number(data.servings) || 0
+      const ingredientsList = (data.ingredients || []).map((i) => (i?.value || '').trim()).filter(Boolean)
+      const stepsList = (data.steps || []).map((s) => (s?.value || '').trim()).filter(Boolean)
+
       const recipeData: any = {
-        title: data.title.trim(),
+        title,
         slug: isEditMode ? undefined : slug, // Don't update slug when editing
-        description: data.description.trim(),
-        category: data.category,
-        prep_time: Number(data.prep_time),
-        servings: Number(data.servings),
-        ingredients: data.ingredients.map((i) => i.value.trim()).filter(Boolean),
-        steps: data.steps.map((s) => s.value.trim()).filter(Boolean),
-        image_url: imageUrl, // First image for backward compatibility
-        images: uploadedImages.length > 0 ? uploadedImages : null, // All images array
+        description,
+        category,
+        prep_time: prepTime >= 1 ? prepTime : 1,
+        servings: servingsCount >= 1 ? servingsCount : 1,
+        ingredients: ingredientsList.length > 0 ? ingredientsList : ['Malzeme belirtilmedi'],
+        steps: stepsList.length > 0 ? stepsList : ['Yapılış belirtilmedi'],
+        image_url: imageUrl,
+        images: uploadedImages.length > 0 ? uploadedImages : null,
         user_email: 'deniz.semerci1036@gmail.com',
       }
 
@@ -532,7 +540,16 @@ export default function RecipeForm({ recipeId, draftId, initialData }: RecipeFor
           ))}
         </div>
 
-        <form onSubmit={handleSubmit(onSubmit)} className="bg-surface rounded-2xl p-6 lg:p-8 shadow-lg border border-warm/30">
+        <form
+          onSubmit={handleSubmit(onSubmit, (err: Record<string, unknown>) => {
+            const firstKey = Object.keys(err || {})[0]
+            const msg = firstKey
+              ? `Eksik veya hatalı alan var. "Geri" ile ${currentStep > 1 ? 'önceki adımları' : 'formu'} kontrol edin.`
+              : 'Lütfen tüm zorunlu alanları doldurun.'
+            error(msg)
+          })}
+          className="bg-surface rounded-2xl p-6 lg:p-8 shadow-lg border border-warm/30"
+        >
           <AnimatePresence mode="wait">
             {/* Step 1: General Info */}
             {currentStep === 1 && (
@@ -549,7 +566,7 @@ export default function RecipeForm({ recipeId, draftId, initialData }: RecipeFor
 
                 <div>
                   <label className="block text-sm font-medium text-text mb-2">
-                    Tarif Başlığı *
+                    Tarif Başlığı
                   </label>
                   <input
                     {...register('title')}
@@ -564,7 +581,7 @@ export default function RecipeForm({ recipeId, draftId, initialData }: RecipeFor
 
                 <div>
                   <label className="block text-sm font-medium text-text mb-2">
-                    Açıklama *
+                    Açıklama
                   </label>
                   <textarea
                     {...register('description')}
@@ -580,7 +597,7 @@ export default function RecipeForm({ recipeId, draftId, initialData }: RecipeFor
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-text mb-2">
-                      Kategori *
+                      Kategori
                     </label>
                     <select
                       {...register('category')}
@@ -600,7 +617,7 @@ export default function RecipeForm({ recipeId, draftId, initialData }: RecipeFor
 
                   <div>
                     <label className="block text-sm font-medium text-text mb-2">
-                      Hazırlık Süresi (dk) *
+                      Hazırlık Süresi (dk)
                     </label>
                     <input
                       {...register('prep_time', { valueAsNumber: true })}
@@ -615,7 +632,7 @@ export default function RecipeForm({ recipeId, draftId, initialData }: RecipeFor
 
                   <div>
                     <label className="block text-sm font-medium text-text mb-2">
-                      Porsiyon *
+                      Porsiyon
                     </label>
                     <input
                       {...register('servings', { valueAsNumber: true })}
@@ -808,23 +825,31 @@ export default function RecipeForm({ recipeId, draftId, initialData }: RecipeFor
                   <ArrowRight className="w-4 h-4" />
                 </button>
               ) : (
-                <button
-                  type="submit"
-                  disabled={uploading}
-                  className="px-6 py-3 bg-primary text-white rounded-xl hover:bg-primary-dark transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-                >
-                  {uploading ? (
-                    <>
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                      {uploadProgress || 'Kaydediliyor...'}
-                    </>
-                  ) : (
-                    <>
-                      {isEditMode ? 'Güncelle' : 'Tarifi Kaydet'}
-                      <ArrowRight className="w-4 h-4" />
-                    </>
+                <div className="flex flex-col items-end gap-1">
+                  {uploading && (
+                    <p className="text-sm text-text/60">Lütfen bekleyin, kaydediliyor...</p>
                   )}
-                </button>
+                  <button
+                    type="submit"
+                    disabled={uploading}
+                    className="px-6 py-3 bg-primary text-white rounded-xl hover:bg-primary-dark transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                  >
+                    {uploading ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        {uploadProgress || 'Kaydediliyor...'}
+                      </>
+                    ) : (
+                      <>
+                        {isEditMode ? 'Güncelle' : 'Tarifi Paylaş'}
+                        <ArrowRight className="w-4 h-4" />
+                      </>
+                    )}
+                  </button>
+                  <p className="text-xs text-text/50 max-w-[220px] text-right">
+                    Kaydetmiyorsa: Geri ile önceki adımları kontrol edin.
+                  </p>
+                </div>
               )}
             </div>
           </div>
