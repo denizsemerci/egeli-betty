@@ -11,7 +11,8 @@ import {
   LogOut,
   Menu,
   X,
-  ChefHat
+  ChefHat,
+  Save
 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 
@@ -22,6 +23,7 @@ interface AdminLayoutProps {
 const navigation = [
   { name: 'Genel Bakış', href: '/admin', icon: LayoutDashboard },
   { name: 'Tarif Listesi', href: '/admin/tarifler', icon: FileText },
+  { name: 'Taslaklar', href: '/admin/taslaklar', icon: Save },
   { name: 'Yeni Tarif', href: '/admin/yeni-tarif', icon: Plus },
   { name: 'Ayarlar', href: '/admin/ayarlar', icon: Settings },
 ]
