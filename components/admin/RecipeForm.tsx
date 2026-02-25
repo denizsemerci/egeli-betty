@@ -82,6 +82,23 @@ export default function RecipeForm({ recipeId, draftId, initialData }: RecipeFor
     }
   }, [])
 
+  // Tarifi Kaydet butonunun takılı kalmasını önle: adım 4'e gelince veya uzun süre "yükleniyor" kalırsa sıfırla
+  useEffect(() => {
+    if (currentStep === 4) {
+      setUploading(false)
+      setUploadProgress('')
+    }
+  }, [currentStep])
+
+  useEffect(() => {
+    if (!uploading) return
+    const t = setTimeout(() => {
+      setUploading(false)
+      setUploadProgress('')
+    }, 90000)
+    return () => clearTimeout(t)
+  }, [uploading])
+
   const {
     register,
     handleSubmit,
