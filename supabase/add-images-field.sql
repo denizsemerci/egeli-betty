@@ -1,6 +1,13 @@
 -- Migration: Add images array field to recipes table
 -- Date: 2024
 -- Description: Adds support for multiple images per recipe while maintaining backward compatibility
+--
+-- NE ZAMAN ÇALIŞTIRILIR: Admin panelinde "Tarifi Kaydet" ile çoklu fotoğraflı tarif kaydederken
+-- "column 'images' does not exist" veya benzeri hata alıyorsan bu dosyayı çalıştırın.
+--
+-- NASIL ÇALIŞTIRILIR:
+-- 1. Supabase Dashboard → projeni seç → SQL Editor → New query
+-- 2. Bu dosyanın tamamını yapıştır → Run (Ctrl/Cmd+Enter)
 
 -- Add images column as TEXT array (nullable, defaults to NULL)
 ALTER TABLE recipes 

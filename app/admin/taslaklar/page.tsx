@@ -1,8 +1,8 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { Edit, Trash2, Search, FileText, Clock, ArrowRight } from 'lucide-react'
+import { Edit, Trash2, Search, FileText, Plus } from 'lucide-react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
@@ -35,6 +35,8 @@ export default function DraftsPage() {
   const [supabase, setSupabase] = useState<any>(null)
   const router = useRouter()
   const { toasts, success, error, removeToast } = useToast()
+  const errorRef = useRef(error)
+  errorRef.current = error
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -58,14 +60,14 @@ export default function DraftsPage() {
         setFilteredDrafts(data || [])
       } catch (err) {
         console.error('Error fetching drafts:', err)
-        error('Taslaklar yüklenirken bir hata oluştu')
+        errorRef.current('Taslaklar yüklenirken bir hata oluştu')
       } finally {
         setLoading(false)
       }
     }
 
     fetchDrafts()
-  }, [supabase, error])
+  }, [supabase])
 
   useEffect(() => {
     if (!searchQuery.trim()) {

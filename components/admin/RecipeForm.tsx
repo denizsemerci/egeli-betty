@@ -282,6 +282,7 @@ export default function RecipeForm({ recipeId, draftId, initialData }: RecipeFor
     if (uploading) return
 
     setUploading(true)
+    setUploadProgress('')
     try {
       if (!supabase) {
         throw new Error('Supabase client başlatılamadı. Lütfen sayfayı yenileyin.')
@@ -308,7 +309,8 @@ export default function RecipeForm({ recipeId, draftId, initialData }: RecipeFor
 
         for (let i = 0; i < images.length; i++) {
           const image = images[i]
-          
+          if (typeof image !== 'string') continue
+
           // Check if it's a data URL (base64) or already uploaded URL
           if (image.startsWith('data:')) {
             // New image, needs to be uploaded
@@ -414,6 +416,10 @@ export default function RecipeForm({ recipeId, draftId, initialData }: RecipeFor
           let errorMessage = 'Tarif kaydedilirken bir hata oluştu.'
           if (insertError.message?.includes('duplicate key value violates unique constraint')) {
             errorMessage = 'Bu başlığa sahip bir tarif zaten mevcut. Lütfen tarif başlığını değiştirin.'
+          } else if (insertError.message?.includes('images') || insertError.message?.includes('column')) {
+            errorMessage = 'Çoklu fotoğraf için veritabanı güncellemesi gerekli. Supabase → SQL Editor’da supabase/add-images-field.sql dosyasını çalıştırın.'
+          } else {
+            errorMessage = insertError.message || errorMessage
           }
           throw new Error(errorMessage)
         }
@@ -436,6 +442,7 @@ export default function RecipeForm({ recipeId, draftId, initialData }: RecipeFor
     } catch (err: any) {
       console.error('Error saving recipe:', err)
       error(err.message || 'Tarif kaydedilirken bir hata oluştu')
+    } finally {
       setUploading(false)
       setUploadProgress('')
     }
