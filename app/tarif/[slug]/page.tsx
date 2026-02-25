@@ -1,4 +1,3 @@
-import { createClient } from '@/lib/supabase/server'
 import { createStaticClient } from '@/lib/supabase/static'
 import { notFound } from 'next/navigation'
 import Image from 'next/image'
@@ -68,7 +67,7 @@ export default async function RecipeDetailPage({
   params: { slug: string }
 }) {
   try {
-    const supabase = await createClient()
+    const supabase = createStaticClient()
     const { data: recipe, error } = await supabase
       .from('recipes')
       .select('*')

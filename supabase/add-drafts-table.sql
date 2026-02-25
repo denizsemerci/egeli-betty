@@ -1,6 +1,12 @@
 -- Migration: Add drafts table for saving recipe drafts
 -- Date: 2024
 -- Description: Creates a separate table for recipe drafts
+--
+-- NASIL ÇALIŞTIRILIR:
+-- 1. Supabase Dashboard (supabase.com) → projeni seç
+-- 2. Sol menüden "SQL Editor" aç
+-- 3. "New query" ile yeni sorgu aç
+-- 4. Bu dosyanın tamamını yapıştırıp "Run" (veya Ctrl+Enter) ile çalıştır
 
 -- Create drafts table
 CREATE TABLE IF NOT EXISTS drafts (
